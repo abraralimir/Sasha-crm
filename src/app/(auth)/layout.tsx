@@ -14,11 +14,6 @@ export default function AuthLayout({
   const pathname = usePathname();
   const { user, isUserLoading } = useUser();
   
-  // We no longer use sessionStorage to ensure verification is required
-  // on every navigation to the auth flow unless already logged in.
-  // The verification status is now implicitly handled by the user's presence on a page.
-  // The verify page will set session-limited flags if needed, but the layout enforces the flow.
-
   useEffect(() => {
     if (!isUserLoading) {
       if (user) {
