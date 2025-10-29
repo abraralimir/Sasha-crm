@@ -1,0 +1,101 @@
+/**
+ * @fileoverview Firestore Security Rules for SashaLeads AI video/audio calling.
+ *
+ * Core Philosophy: This ruleset enforces a strict user-centric security model.
+ *   - Users can only read and write their own profile data.
+ *   - Users can only access files they have uploaded.
+ *   - Call session data is accessible only to the participants (caller and callee).
+ *   - All write operations require a valid, authenticated user.
+ *
+ * Data Structure:
+ *   - /users/{userId}: Stores user profiles.
+ *   - /users/{userId}/files/{fileId}: Stores files uploaded by the user.
+ *   - /call_sessions/{callSessionId}: Stores call session details.
+ *
+ * Key Security Decisions:
+ *   - User listing is disallowed to protect user privacy.
+ *   - The rules explicitly deny any ambiguous access to enforce a default-deny posture.
+ *
+ * Denormalization for Authorization:
+ *   - CallSession documents denormalize `callerId` and `calleeId` to enable simple, direct authorization checks.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Protects user profiles. Only the user themselves can read and write their profile.
+     * @path /users/{userId}
+     * @allow (create) User with ID 'user_abc' can create their profile.
+     * @allow (get) User with ID 'user_abc' can read their profile.
+     * @allow (update) User with ID 'user_abc' can update their profile.
+     * @allow (delete) User with ID 'user_abc' can delete their profile.
+     * @deny (create) User with ID 'user_def' cannot create a profile with ID 'user_abc'.
+     * @deny (get) User with ID 'user_def' cannot read the profile of 'user_abc'.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false; // User listing is not permitted.
+
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isOwner(userId) && resource.data.id == userId;
+      allow delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Protects files uploaded by users. Only the owning user can access these files.
+     * @path /users/{userId}/files/{fileId}
+     * @allow (create) User 'user_abc' can create a file in their files collection.
+     * @allow (get) User 'user_abc' can read a file in their files collection.
+     * @allow (update) User 'user_abc' can update a file in their files collection.
+     * @allow (delete) User 'user_abc' can delete a file in their files collection.
+     * @deny (create) User 'user_def' cannot create a file in user_abc's files collection.
+     * @deny (get) User 'user_def' cannot read a file in user_abc's files collection.
+     * @principle Enforces path-based ownership for all file operations.
+     */
+    match /users/{userId}/files/{fileId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && resource != null;
+      allow delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Controls access to call session data. Only the caller and callee can access the call session.
+     * @path /call_sessions/{callSessionId}
+     * @allow (create) User 'user_abc' can create a call session where they are either the caller or callee.
+     * @allow (get) User 'user_abc' can read a call session where they are either the caller or callee.
+     * @allow (update) User 'user_abc' can update a call session where they are either the caller or callee.
+     * @allow (delete) User 'user_abc' can delete a call session where they are either the caller or callee.
+     * @deny (get) User 'user_def' cannot read a call session where they are not the caller or callee.
+     * @principle Grants access based on participation in the call session (caller or callee).
+     */
+    match /call_sessions/{callSessionId} {
+      function isParticipant() {
+        return request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.calleeId;
+      }
+
+      function isCreatingParticipant() {
+        return request.auth.uid == request.resource.data.callerId || request.auth.uid == request.resource.data.calleeId;
+      }
+
+      allow get: if isParticipant();
+      allow list: if false;
+
+      allow create: if isCreatingParticipant();
+      allow update: if isParticipant() && resource != null;
+      allow delete: if isParticipant() && resource != null;
+    }
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "entities": {
+    "CallSession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CallSession",
+      "type": "object",
+      "description": "Represents a video or audio call session between users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the call session."
+        },
+        "callerId": {
+          "type": "string",
+          "description": "Reference to the User initiating the call. (Relationship: User 1:N CallSession)"
+        },
+        "calleeId": {
+          "type": "string",
+          "description": "Reference to the User receiving the call. (Relationship: User 1:N CallSession)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the call started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the call ended.",
+          "format": "date-time"
+        },
+        "callType": {
+          "type": "string",
+          "description": "Type of call (e.g., 'audio', 'video')."
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the call session (e.g., 'ongoing', 'completed', 'missed')."
+        },
+        "sharedFileIds": {
+          "type": "array",
+          "description": "References to shared files during the call session. (Relationship: File N:N CallSession)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "callerId",
+        "calleeId",
+        "startTime",
+        "callType",
+        "status"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user within the SashaLeads AI application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        },
+        "profilePictureUrl": {
+          "type": "string",
+          "description": "URL to the user's profile picture.",
+          "format": "uri"
+        },
+        "bitsteckTeamId": {
+          "type": "string",
+          "description": "Reference to the Bitsteck team the user belongs to. (Relationship: BitsteckTeam 1:N User)"
+        },
+        "sashaConsultingTeamId": {
+          "type": "string",
+          "description": "Reference to the Sasha Consulting team the user belongs to. (Relationship: SashaConsultingTeam 1:N User)"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name"
+      ]
+    },
+    "File": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "File",
+      "type": "object",
+      "description": "Represents a file shared within the application, e.g., during a call or in chat.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the file."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the file."
+        },
+        "url": {
+          "type": "string",
+          "description": "URL where the file is stored.",
+          "format": "uri"
+        },
+        "uploadTimestamp": {
+          "type": "string",
+          "description": "Timestamp indicating when the file was uploaded.",
+          "format": "date-time"
+        },
+        "uploaderId": {
+          "type": "string",
+          "description": "Reference to the User who uploaded the file. (Relationship: User 1:N File)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "url",
+        "uploadTimestamp",
+        "uploaderId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Secured by user ID.  Each user can only access their own profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/files/{fileId}",
+        "definition": {
+          "entityName": "File",
+          "schema": {
+            "$ref": "#/backend/entities/File"
+          },
+          "description": "Stores files uploaded by a specific user. Secured by path-based ownership (user ID).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "fileId",
+              "description": "The unique identifier for the file."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/call_sessions/{callSessionId}",
+        "definition": {
+          "entityName": "CallSession",
+          "schema": {
+            "$ref": "#/backend/entities/CallSession"
+          },
+          "description": "Stores call session details. Authorization is controlled by the 'callerId' and 'calleeId' fields. Only participants can access call session data.",
+          "params": [
+            {
+              "name": "callSessionId",
+              "description": "The unique identifier for the call session."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support video and audio calling features within the SashaLeads AI application, prioritizing security, scalability, and debuggability. Authorization Independence is achieved through denormalization. Specifically, for `CallSession` documents, the `callerId` and `calleeId` inherently provide authorization context based on the user's ID. This enables straightforward security rules to control access based on user identity without needing to perform `get()` operations on parent documents. To ensure QAPs, data is structurally segregated such that data needing different access controls is stored in separate collections. All CallSession documents share the same security requirements (access by the participants). Path-based ownership is leveraged for private user data and collections such as `users/{userId}/files/{fileId}`."
+  }
+}
