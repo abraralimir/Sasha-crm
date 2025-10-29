@@ -1,16 +1,7 @@
-import { Phone } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserNav } from "@/components/layout/user-nav";
-import { Button } from "../ui/button";
 import { PlatformAiChat } from "../platform-ai-chat";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { VideoCall } from "../video-call";
 
 
 export function Header() {
@@ -24,23 +15,7 @@ export function Header() {
       </div>
       <div className="flex items-center gap-2">
         <PlatformAiChat />
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
-                    <Phone className="h-4 w-4" />
-                    <span className="sr-only">Start Call</span>
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                <DialogTitle>Video Calling</DialogTitle>
-                <DialogDescription>
-                    Our enhanced video and voice calling feature is coming soon! Stay tuned for seamless collaboration with screen sharing and easy scheduling.
-                </DialogDescription>
-                </DialogHeader>
-            </DialogContent>
-        </Dialog>
-
+        <VideoCall />
         <UserNav />
       </div>
     </header>
