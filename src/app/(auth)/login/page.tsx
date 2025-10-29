@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useUser } from "@/firebase";
-import { initiateEmailSignIn } from "@/firebase/non-blocking-login";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
@@ -38,8 +38,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
-
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,19 +47,15 @@ export default function LoginPage() {
     },
   });
 
-  useEffect(() => {
-    if (!isUserLoading && user) {
-      router.push("/dashboard");
-    }
-  }, [user, isUserLoading, router]);
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      initiateEmailSignIn(auth, values.email, values.password);
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      sessionStorage.removeItem('isVerified');
       toast({
         title: "Login Successful",
         description: "Redirecting to your dashboard...",
       });
+      // The auth layout's useEffect will handle the redirect on user state change.
     } catch (error: any) {
       console.error("Login error:", error);
       let description = "An unexpected error occurred.";
@@ -74,14 +69,6 @@ export default function LoginPage() {
       });
     }
   };
-
-  if (isUserLoading || user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <Card className="w-full max-w-sm">
@@ -126,7 +113,7 @@ export default function LoginPage() {
           </form>
         </Form>
         <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{" "}
+          Need to create an account?{" "}
           <Link href="/signup" className="underline">
             Sign up
           </Link>

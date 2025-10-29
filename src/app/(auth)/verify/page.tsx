@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useUser } from '@/firebase';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -25,13 +24,11 @@ export default function VerifyPage() {
   const { toast } = useToast();
   const router = useRouter();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-     if (!isUserLoading && user) {
-      router.replace('/dashboard');
-    }
-  }, [user, isUserLoading, router]);
+    // Clear any previous verification status when the page loads
+    sessionStorage.removeItem('isVerified');
+  }, []);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -65,6 +62,8 @@ export default function VerifyPage() {
           title: 'Verification Successful!',
           description: 'Redirecting you to the sign-up page...',
         });
+        // Set a flag to indicate verification is complete for this session
+        sessionStorage.setItem('isVerified', 'true');
         setTimeout(() => router.push('/signup'), 2000);
       }
     } catch (error) {
@@ -80,14 +79,6 @@ export default function VerifyPage() {
       setIsLoading(false);
     }
   };
-
-  if (isUserLoading || user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <Card className="w-full max-w-lg">

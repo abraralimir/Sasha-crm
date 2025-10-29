@@ -10,14 +10,17 @@ export default function Home() {
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (!isUserLoading) {
-      if (user) {
-        // If the user is logged in, send them to the dashboard.
-        router.replace("/dashboard");
-      } else {
-        // If the user is not logged in, ALWAYS send them to the verification page.
-        router.replace("/verify");
-      }
+    if (isUserLoading) {
+      // Wait for the user status to be determined
+      return;
+    }
+
+    if (user) {
+      // If the user is logged in, send them to the dashboard.
+      router.replace("/dashboard");
+    } else {
+      // If the user is not logged in, ALWAYS send them to the verification page.
+      router.replace("/verify");
     }
   }, [user, isUserLoading, router]);
 

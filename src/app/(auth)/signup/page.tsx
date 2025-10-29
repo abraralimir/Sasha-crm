@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect } from "react";
 import { User, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc } from "firebase/firestore";
 
@@ -27,7 +26,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, useFirestore, useUser } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Loader2 } from "lucide-react";
 
@@ -44,7 +43,6 @@ export default function SignupPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -55,24 +53,19 @@ export default function SignupPage() {
     },
   });
 
-  useEffect(() => {
-    if (!isUserLoading && user) {
-      router.push("/dashboard");
-    }
-  }, [user, isUserLoading, router]);
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const newUser = userCredential.user;
 
       await createUserProfile(newUser, values.name);
-
+      
+      sessionStorage.removeItem('isVerified');
       toast({
         title: "Account Created",
         description: "You have been successfully signed up. Redirecting...",
       });
-      // The useEffect will handle the redirect
+      // The auth layout's useEffect will handle the redirect on user state change.
     } catch (error: any) {
       console.error("Signup error:", error);
       let description = "An unexpected error occurred.";
@@ -87,7 +80,7 @@ export default function SignupPage() {
     }
   };
 
-  const createUserProfile = async (user: User, name: string) => {
+  const createUserProfile = (user: User, name: string) => {
     const userProfile = {
       id: user.uid,
       email: user.email,
@@ -98,14 +91,6 @@ export default function SignupPage() {
     const userDocRef = doc(firestore, "users", user.uid);
     setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
   };
-  
-  if (isUserLoading || user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <Card className="w-full max-w-sm">
