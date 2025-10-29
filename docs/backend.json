@@ -1,66 +1,5 @@
 {
   "entities": {
-    "CallSession": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "CallSession",
-      "type": "object",
-      "description": "Represents a video or audio call session between users.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the call session."
-        },
-        "callerId": {
-          "type": "string",
-          "description": "Reference to the User initiating the call. (Relationship: User 1:N CallSession)"
-        },
-        "calleeId": {
-          "type": "string",
-          "description": "Reference to the User receiving the call. (Relationship: User 1:N CallSession)"
-        },
-        "startTime": {
-          "type": "string",
-          "description": "Timestamp indicating when the call started.",
-          "format": "date-time"
-        },
-        "endTime": {
-          "type": "string",
-          "description": "Timestamp indicating when the call ended.",
-          "format": "date-time"
-        },
-        "callType": {
-          "type": "string",
-          "description": "Type of call (e.g., 'audio', 'video')."
-        },
-        "status": {
-          "type": "string",
-          "description": "Current status of the call session (e.g., 'ongoing', 'completed', 'missed')."
-        },
-        "sharedFileIds": {
-          "type": "array",
-          "description": "References to shared files during the call session. (Relationship: File N:N CallSession)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "offer": {
-          "type": "object",
-          "description": "WebRTC offer from the caller."
-        },
-        "answer": {
-          "type": "object",
-          "description": "WebRTC answer from the callee."
-        }
-      },
-      "required": [
-        "id",
-        "callerId",
-        "calleeId",
-        "startTime",
-        "callType",
-        "status"
-      ]
-    },
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
@@ -84,57 +23,12 @@
           "type": "string",
           "description": "URL to the user's profile picture.",
           "format": "uri"
-        },
-        "bitsteckTeamId": {
-          "type": "string",
-          "description": "Reference to the Bitsteck team the user belongs to. (Relationship: BitsteckTeam 1:N User)"
-        },
-        "sashaConsultingTeamId": {
-          "type": "string",
-          "description": "Reference to the Sasha Consulting team the user belongs to. (Relationship: SashaConsultingTeam 1:N User)"
         }
       },
       "required": [
         "id",
         "email",
         "name"
-      ]
-    },
-    "File": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "File",
-      "type": "object",
-      "description": "Represents a file shared within the application, e.g., during a call or in chat.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the file."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the file."
-        },
-        "url": {
-          "type": "string",
-          "description": "URL where the file is stored.",
-          "format": "uri"
-        },
-        "uploadTimestamp": {
-          "type": "string",
-          "description": "Timestamp indicating when the file was uploaded.",
-          "format": "date-time"
-        },
-        "uploaderId": {
-          "type": "string",
-          "description": "Reference to the User who uploaded the file. (Relationship: User 1:N File)"
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "url",
-        "uploadTimestamp",
-        "uploaderId"
       ]
     }
   },
@@ -148,14 +42,6 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles. Secured by user ID. Each user can only access their own profile."
-    },
-    "/users/{userId}/files/{fileId}": {
-      "schema": { "$ref": "#/entities/File" },
-      "description": "Stores files uploaded by a specific user. Secured by path-based ownership (user ID)."
-    },
-    "/call_sessions/{callSessionId}": {
-      "schema": { "$ref": "#/entities/CallSession" },
-      "description": "Stores call session details for WebRTC signaling. Authorization is controlled by the 'callerId' and 'calleeId' fields. Only participants can access call session data."
     }
   }
 }
