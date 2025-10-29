@@ -11,6 +11,8 @@ import {
   Firestore,
   serverTimestamp,
   FirestoreError,
+  query,
+  where,
 } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -212,8 +214,9 @@ export const listenForCall = (
   callback: (callId: string, offer: RTCSessionDescriptionInit) => void
 ) => {
   const callsCollection = collection(firestore, 'call_sessions');
+  const q = query(callsCollection, where('calleeId', '==', userId));
   
-  const unsubscribe = onSnapshot(callsCollection, 
+  const unsubscribe = onSnapshot(q, 
     (snapshot) => {
         snapshot.docChanges().forEach(async (change) => {
         const docData = change.doc.data();
