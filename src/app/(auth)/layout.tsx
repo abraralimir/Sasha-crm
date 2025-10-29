@@ -2,8 +2,9 @@
 
 import { Logo } from "@/components/logo";
 import { useUser } from "@/firebase";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function AuthLayout({
   children,
@@ -11,38 +12,25 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const { user, isUserLoading } = useUser();
   
   useEffect(() => {
-    if (!isUserLoading) {
-      if (user) {
-        // If user is logged in, always go to the dashboard.
-        router.replace('/dashboard');
-        return;
-      }
-
-      // Read verification status from sessionStorage.
-      // This is set only upon successful AI verification on the /verify page.
-      const isVerified = sessionStorage.getItem('isVerified') === 'true';
-
-      if (!isVerified && pathname !== '/verify') {
-        // If not verified and trying to access any auth page other than /verify,
-        // force redirect to the verification page.
-        router.replace('/verify');
-      }
+    // If the user is logged in, they should not be on any auth pages.
+    // Redirect them to the dashboard.
+    if (!isUserLoading && user) {
+      router.replace('/dashboard');
     }
-  }, [pathname, router, user, isUserLoading]);
+  }, [user, isUserLoading, router]);
   
-  // To prevent flicker or showing a page before redirection,
-  // we can check verification status here too.
-  if (typeof window !== 'undefined') {
-    const isVerified = sessionStorage.getItem('isVerified') === 'true';
-    if (!user && !isVerified && pathname !== '/verify') {
-      return null; // Or a loading spinner
-    }
+  // Show a loader while checking for an active user session.
+  // This prevents briefly flashing the auth page before redirecting.
+  if (isUserLoading || user) {
+     return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
   }
-
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
