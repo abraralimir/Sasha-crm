@@ -14,7 +14,7 @@ export default function Home() {
       if (user) {
         router.replace("/dashboard");
       } else {
-        router.replace("/login");
+        router.replace("/verify");
       }
     }
   }, [user, isUserLoading, router]);
