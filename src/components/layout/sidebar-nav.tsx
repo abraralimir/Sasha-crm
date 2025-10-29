@@ -17,7 +17,6 @@ const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
   { href: '/leads', label: 'Leads', icon: Users },
   { href: '/chat', label: 'Collaboration', icon: MessageSquare },
-  { href: '/conference', label: 'Conference', icon: Video },
 ];
 
 export function SidebarNav() {
