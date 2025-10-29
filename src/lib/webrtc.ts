@@ -10,8 +10,11 @@ import {
   deleteDoc,
   Firestore,
   serverTimestamp,
+  FirestoreError,
 } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const servers = {
   iceServers: [
@@ -50,18 +53,34 @@ const createPeerConnection = (
 
   pc.onicecandidate = (event) => {
     if (event.candidate) {
-      addDoc(callerCandidatesCollection, event.candidate.toJSON());
+      addDoc(callerCandidatesCollection, event.candidate.toJSON())
+      .catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: callerCandidatesCollection.path,
+            operation: 'create',
+            requestResourceData: event.candidate.toJSON(),
+        }));
+      });
     }
   };
   
-  onSnapshot(calleeCandidatesCollection, (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === 'added') {
-        const candidate = new RTCIceCandidate(change.doc.data());
-        pc?.addIceCandidate(candidate);
-      }
-    });
-  });
+  onSnapshot(calleeCandidatesCollection, 
+    (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const candidate = new RTCIceCandidate(change.doc.data());
+          pc?.addIceCandidate(candidate);
+        }
+      });
+    },
+    (error: FirestoreError) => {
+        const contextualError = new FirestorePermissionError({
+            operation: 'list',
+            path: calleeCandidatesCollection.path,
+        });
+        errorEmitter.emit('permission-error', contextualError);
+    }
+  );
 
 
   return pc;
@@ -87,23 +106,41 @@ export const createCall = async (
     type: offerDescription.type,
   };
 
-  await setDoc(callDocRef, { 
-      offer, 
-      callerId, 
-      calleeId, 
-      status: 'ringing', 
-      startTime: serverTimestamp(),
-      id: callId,
-      callType: 'video',
+  const callData = { 
+    offer, 
+    callerId, 
+    calleeId, 
+    status: 'ringing', 
+    startTime: serverTimestamp(),
+    id: callId,
+    callType: 'video',
+  };
+
+  setDoc(callDocRef, callData)
+    .catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: callDocRef.path,
+            operation: 'create',
+            requestResourceData: callData,
+        }));
     });
 
-  onSnapshot(callDocRef, (snapshot) => {
-    const data = snapshot.data();
-    if (!pc?.currentRemoteDescription && data?.answer) {
-      const answerDescription = new RTCSessionDescription(data.answer);
-      pc?.setRemoteDescription(answerDescription);
+  onSnapshot(callDocRef, 
+    (snapshot) => {
+        const data = snapshot.data();
+        if (!pc?.currentRemoteDescription && data?.answer) {
+          const answerDescription = new RTCSessionDescription(data.answer);
+          pc?.setRemoteDescription(answerDescription);
+        }
+    },
+    (error: FirestoreError) => {
+        const contextualError = new FirestorePermissionError({
+            operation: 'get',
+            path: callDocRef.path,
+        });
+        errorEmitter.emit('permission-error', contextualError);
     }
-  });
+  );
 
   return callId;
 };
@@ -127,13 +164,28 @@ export const answerCall = async (
     type: answerDescription.type,
     sdp: answerDescription.sdp,
   };
-
-  await updateDoc(callDocRef, { answer, status: 'answered' });
+  
+  const callUpdate = { answer, status: 'answered' };
+  updateDoc(callDocRef, callUpdate)
+    .catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: callDocRef.path,
+            operation: 'update',
+            requestResourceData: callUpdate,
+        }));
+    });
 
   const calleeCandidatesCollection = collection(firestore, 'call_sessions', callId, 'calleeCandidates');
    pc.onicecandidate = (event) => {
     if (event.candidate) {
-      addDoc(calleeCandidatesCollection, event.candidate.toJSON());
+      addDoc(calleeCandidatesCollection, event.candidate.toJSON())
+        .catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: calleeCandidatesCollection.path,
+                operation: 'create',
+                requestResourceData: event.candidate.toJSON(),
+            }));
+        });
     }
   };
 };
@@ -141,9 +193,14 @@ export const answerCall = async (
 export const endCall = async (firestore: Firestore, callId: string) => {
     const callDocRef = doc(firestore, 'call_sessions', callId);
     
-    // In a real app you might want to handle cleanup of subcollections
-    // For simplicity, we just delete the main doc.
-    await deleteDoc(callDocRef);
+    deleteDoc(callDocRef)
+      .catch(error => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: callDocRef.path,
+              operation: 'delete',
+          }));
+      });
+
     pc?.close();
     pc = null;
 };
@@ -156,19 +213,28 @@ export const listenForCall = (
 ) => {
   const callsCollection = collection(firestore, 'call_sessions');
   
-  const unsubscribe = onSnapshot(callsCollection, (snapshot) => {
-    snapshot.docChanges().forEach(async (change) => {
-      const docData = change.doc.data();
-      if (
-        change.type === 'added' &&
-        docData.calleeId === userId &&
-        docData.status === 'ringing' &&
-        docData.offer
-      ) {
-         callback(change.doc.id, docData.offer);
-      }
-    });
-  });
+  const unsubscribe = onSnapshot(callsCollection, 
+    (snapshot) => {
+        snapshot.docChanges().forEach(async (change) => {
+        const docData = change.doc.data();
+        if (
+            change.type === 'added' &&
+            docData.calleeId === userId &&
+            docData.status === 'ringing' &&
+            docData.offer
+        ) {
+            callback(change.doc.id, docData.offer);
+        }
+        });
+    },
+    (error: FirestoreError) => {
+        const contextualError = new FirestorePermissionError({
+            operation: 'list',
+            path: callsCollection.path,
+        });
+        errorEmitter.emit('permission-error', contextualError);
+    }
+  );
 
   return unsubscribe;
 };
