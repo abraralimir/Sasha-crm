@@ -65,7 +65,6 @@ export default function VerifyPage() {
           title: 'Verification Successful!',
           description: 'Redirecting you to the sign-up page...',
         });
-        // No more session storage. Just navigate.
         setTimeout(() => router.push('/signup'), 2000);
       }
     } catch (error) {
