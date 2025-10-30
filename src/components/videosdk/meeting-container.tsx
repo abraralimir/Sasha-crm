@@ -14,7 +14,8 @@ export function MeetingContainer({ onMeetingLeave }: { onMeetingLeave: () => voi
     join();
   }, []);
 
-  const allParticipants = [localParticipant, ...[...participants.values()]];
+  const remoteParticipants = [...participants.values()].filter(p => p.id !== localParticipant.id);
+  const allParticipants = [localParticipant, ...remoteParticipants];
 
   if (!localParticipant) {
      return (
