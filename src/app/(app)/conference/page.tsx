@@ -17,6 +17,7 @@ export default function ConferencePage() {
   const [isWebCamOn, setIsWebCamOn] = useState(true);
   const [isMeetingJoined, setIsMeetingJoined] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSdkLoaded, setIsSdkLoaded] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const { user } = useUser();
   const sdkToken = process.env.NEXT_PUBLIC_VIDEOSDK_TOKEN;
@@ -28,6 +29,7 @@ export default function ConferencePage() {
     script.src = `https://sdk.videosdk.live/js-sdk/0.1.41/videosdk.js`;
     script.onload = () => {
       console.log('VideoSDK script loaded.');
+      setIsSdkLoaded(true);
     };
     document.head.appendChild(script);
 
@@ -291,7 +293,7 @@ export default function ConferencePage() {
                 placeholder="Enter Meeting ID"
                 value={meetingId}
                 onChange={(e) => setMeetingId(e.target.value)}
-                disabled={loading}
+                disabled={loading || !isSdkLoaded}
               />
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -301,12 +303,12 @@ export default function ConferencePage() {
                   <span className="bg-background px-2 text-muted-foreground">Or</span>
                 </div>
               </div>
-              <Button onClick={createNewMeeting} variant="outline" className="w-full" disabled={loading}>
+              <Button onClick={createNewMeeting} variant="outline" className="w-full" disabled={loading || !isSdkLoaded}>
                 {loading && !meetingId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Create a new meeting'}
               </Button>
             </CardContent>
             <CardFooter>
-              <Button onClick={joinExistingMeeting} className="w-full" disabled={!meetingId || loading}>
+              <Button onClick={joinExistingMeeting} className="w-full" disabled={!meetingId || loading || !isSdkLoaded}>
                 {loading && meetingId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Join Meeting'}
               </Button>
             </CardFooter>
