@@ -13,11 +13,11 @@ export default function ConferencePage() {
   const [token, setToken] = useState<string | null>(null);
   const { user } = useUser();
 
-  const apiKey = process.env.VIDEOSDK_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_VIDEOSDK_API_KEY;
 
   useEffect(() => {
     // A real app would get a token from a server, but for simplicity, we'll use the one from the .env file.
-    setToken(process.env.VIDEOSDK_TOKEN || null);
+    setToken(process.env.NEXT_PUBLIC_VIDEOSDK_TOKEN || null);
   }, []);
 
   const onMeetingLeave = () => {

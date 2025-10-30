@@ -37,8 +37,8 @@ pathname: '/**',
     ],
   },
    env: {
-    VIDEOSDK_TOKEN: process.env.VIDEOSDK_TOKEN,
-    VIDEOSDK_API_KEY: process.env.VIDEOSDK_API_KEY,
+    NEXT_PUBLIC_VIDEOSDK_TOKEN: process.env.NEXT_PUBLIC_VIDEOSDK_TOKEN,
+    NEXT_PUBLIC_VIDEOSDK_API_KEY: process.env.NEXT_PUBLIC_VIDEOSDK_API_KEY,
   }
 };
 
