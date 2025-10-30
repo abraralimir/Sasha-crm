@@ -36,10 +36,9 @@ pathname: '/**',
       },
     ],
   },
-  env: {
-    VONAGE_API_KEY: process.env.VONAGE_API_KEY,
-    VONAGE_SESSION_ID: process.env.VONAGE_SESSION_ID,
-    VONAGE_TOKEN: process.env.VONAGE_TOKEN,
+   env: {
+    VIDEOSDK_TOKEN: process.env.VIDEOSDK_TOKEN,
+    VIDEOSDK_API_KEY: process.env.VIDEOSDK_API_KEY,
   }
 };
 
