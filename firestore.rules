@@ -1,131 +1,129 @@
 /**
- * @fileoverview Firestore Security Rules for SashaLeads AI application.
- *
- * Core Philosophy:
- * This ruleset enforces a user-ownership model for user profiles, allowing each
- * user to read and write their own data. It also allows authenticated users
- * to freely read and create chat messages, and manage leads and tasks.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a user-ownership model for user profiles
+ * and allows authenticated users to manage leads and tasks. All group chat messages
+ * are readable and writable by all authenticated users.
  *
  * Data Structure:
  * - /users/{userId}: Stores individual user profiles.
- * - /messages/{messageId}: Stores chat messages accessible to all authenticated users.
- * - /leads/{leadId}: Stores lead data accessible to all authenticated users.
- * - /tasks/{taskId}: Stores task data accessible to all authenticated users.
+ * - /messages/{messageId}: Stores group chat messages.
+ * - /leads/{leadId}: Stores lead information.
+ * - /tasks/{taskId}: Stores task information.
  *
  * Key Security Decisions:
- * - Users can only list other users, but can access their own profiles.
- * - Chat messages are public to all authenticated users.
- * - Leads and Tasks are accessible to all authenticated users.
- *
- * Denormalization for Authorization:
- *  - There is no denormalization being used at this time.
- *
- * Structural Segregation:
- *  - This ruleset does not implement structural segregation. All data is stored
- *    in a single Firestore database.
+ * - Users can only read and write their own profile data.
+ * - All authenticated users can read and write group chat messages.
+ * - All authenticated users can manage leads and tasks.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Manages user profiles. Users can only read, update, and delete their own profile.
-     * @path /databases/{database}/documents/users/{userId}
-     * @allow (get) Authenticated user accessing their own profile.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/users/user123'
-     * @allow (create) Authenticated user creating their own profile.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/users/user123'
-     * @allow (update) Authenticated user updating their own profile.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/users/user123'
-     * @allow (delete) Authenticated user deleting their own profile.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/users/user123'
-     * @deny (get) Authenticated user accessing another user's profile.
-     *   Example: auth.uid = 'user456', path = '/databases/{database}/documents/users/user123'
-     * @deny (create) Unauthenticated user attempting to create a profile.
-     *   Example: auth.uid = null, path = '/databases/{database}/documents/users/user123'
-     * @deny (update) Authenticated user attempting to update another user's profile.
-     *   Example: auth.uid = 'user456', path = '/databases/{database}/documents/users/user123'
-     * @deny (delete) Authenticated user attempting to delete another user's profile.
-     *   Example: auth.uid = 'user456', path = '/databases/{database}/documents/users/user123'
-     * @principle Enforces document ownership for writes.
+     * @description Controls access to user profile documents.
+     * @path /users/{userId}
+     * @allow (create) User with ID 'user123' creates their profile.
+     *   - Request: { auth: { uid: 'user123' }, resource: { data: { id: 'user123', name: 'John Doe', email: 'john.doe@example.com' } } }
+     * @allow (get) User with ID 'user123' reads their profile.
+     *   - Request: { auth: { uid: 'user123' } }
+     * @allow (update) User with ID 'user123' updates their profile.
+     *   - Request: { auth: { uid: 'user123' }, resource: { data: { id: 'user123', name: 'Updated Name' } } }
+     * @allow (delete) User with ID 'user123' deletes their profile.
+     *   - Request: { auth: { uid: 'user123' } }
+     * @deny (create) User with ID 'user456' tries to create profile for 'user123'.
+     *   - Request: { auth: { uid: 'user456' }, resource: { data: { id: 'user123' } } }
+     * @deny (get) User with ID 'user456' tries to read profile of 'user123'.
+     *   - Request: { auth: { uid: 'user456' } }
+     * @deny (update) User with ID 'user456' tries to update profile of 'user123'.
+     *   - Request: { auth: { uid: 'user456' }, resource: { data: { id: 'user123' } } }
+     * @deny (delete) User with ID 'user456' tries to delete profile of 'user123'.
+     *   - Request: { auth: { uid: 'user456' } }
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false; // Prevent listing of all users.
-      allow create: if isSignedIn() && request.resource.data.id == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows any authenticated user to read and create chat messages.
-     * @path /databases/{database}/documents/messages/{messageId}
-     * @allow (get) Any authenticated user can read a chat message.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/messages/message1'
-     * @allow (create) Any authenticated user can create a chat message.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/messages/message1'
-     * @deny (update) No one can update a chat message.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/messages/message1'
-     * @deny (delete) No one can delete a chat message.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/messages/message1'
-     * @principle Allows public read and create access for authenticated users.
+     * @description Controls access to chat messages. All authenticated users can read and write.
+     * @path /messages/{messageId}
+     * @allow (create) Any authenticated user creates a chat message.
+     *   - Request: { auth: { uid: 'user123' }, resource: { data: { text: 'Hello world', userId: 'user123', userName: 'John' } } }
+     * @allow (get) Any user reads a chat message.
+     *   - Request: { auth: { uid: 'user123' } }
+     * @allow (list) Any user lists chat messages.
+     *   - Request: { auth: { uid: 'user123' } }
+     * @deny (update) No specific deny conditions, but updates are generally discouraged for chat messages.
+     * @deny (delete) No specific deny conditions, but deletes are generally discouraged for chat messages.
+     * @principle Allows public read and authenticated write access to chat messages.
      */
     match /messages/{messageId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create: if isSignedIn();
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows any authenticated user to manage leads.
-     * @path /databases/{database}/documents/leads/{leadId}
-     * @allow (get) Any authenticated user can read a lead.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/leads/lead1'
-     * @allow (list) Any authenticated user can list leads.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/leads'
+     * @description Controls access to lead documents. All authenticated users can manage leads.
+     * @path /leads/{leadId}
      * @allow (create) Any authenticated user can create a lead.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/leads/lead1'
+     *   - Request: { auth: { uid: 'user123' }, resource: { data: { contactName: 'Jane Doe', companyName: 'Acme Corp', email: 'jane.doe@acme.com' } } }
+     * @allow (get) Any authenticated user can read a lead.
+     *   - Request: { auth: { uid: 'user123' } }
+     * @allow (list) Any authenticated user can list leads.
+     *   - Request: { auth: { uid: 'user123' } }
      * @allow (update) Any authenticated user can update a lead.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/leads/lead1'
+     *   - Request: { auth: { uid: 'user123' }, resource: { data: { contactName: 'Jane Doe', status: 'Contacted' } } }
      * @allow (delete) Any authenticated user can delete a lead.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/leads/lead1'
-     * @principle Allows public read and write access for authenticated users.
+     *   - Request: { auth: { uid: 'user123' } }
+     * @deny No explicit deny conditions, as any authenticated user can manage leads.
+     * @principle Allows any authenticated user to manage leads.
      */
     match /leads/{leadId} {
-      allow get, list, create, update, delete: if isSignedIn();
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
 
-    /**
-     * @description Allows any authenticated user to manage tasks.
-     * @path /databases/{database}/documents/tasks/{taskId}
-     * @allow (get) Any authenticated user can read a task.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/tasks/task1'
-     * @allow (list) Any authenticated user can list tasks.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/tasks'
+        /**
+     * @description Controls access to task documents. All authenticated users can manage tasks.
+     * @path /tasks/{taskId}
      * @allow (create) Any authenticated user can create a task.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/tasks/task1'
+     *   - Request: { auth: { uid: 'user123' }, resource: { data: { title: 'New Task', status: 'To Do', createdAt: timestamp.now() } } }
+     * @allow (get) Any authenticated user can read a task.
+     *   - Request: { auth: { uid: 'user123' } }
+     * @allow (list) Any authenticated user can list tasks.
+     *   - Request: { auth: { uid: 'user123' } }
      * @allow (update) Any authenticated user can update a task.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/tasks/task1'
+     *   - Request: { auth: { uid: 'user123' }, resource: { data: { title: 'Updated Task Title', status: 'In Progress' } } }
      * @allow (delete) Any authenticated user can delete a task.
-     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/tasks/task1'
-     * @principle Allows public read and write access for authenticated users.
+     *   - Request: { auth: { uid: 'user123' } }
+     * @deny No explicit deny conditions, as any authenticated user can manage tasks.
+     * @principle Allows any authenticated user to manage tasks.
      */
     match /tasks/{taskId} {
-      allow get, list, create, update, delete: if isSignedIn();
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
   }
 
-  // Helper function to determine if the user is signed in.
+  // Helper functions
   function isSignedIn() {
     return request.auth != null;
   }
 
-  // Helper function to determine if the user is the owner of the resource.
   function isOwner(userId) {
     return request.auth.uid == userId;
   }
 
-  // Helper function to determine if the user is the owner of the resource and the resource exists.
   function isExistingOwner(userId) {
     return isOwner(userId) && resource != null;
   }
