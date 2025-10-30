@@ -1,101 +1,97 @@
 /**
- * @fileoverview Firestore Security Rules for SashaLeads AI video/audio calling.
+ * @fileoverview Firestore Security Rules for SashaLeads AI application.
  *
- * Core Philosophy: This ruleset enforces a strict user-centric security model.
- *   - Users can only read and write their own profile data.
- *   - Users can only access files they have uploaded.
- *   - Call session data is accessible only to the participants (caller and callee).
- *   - All write operations require a valid, authenticated user.
+ * Core Philosophy:
+ * This ruleset prioritizes security by enforcing strict access control based on authentication and explicit authorization checks.
+ * It assumes a public group chat where all authenticated users can read messages, and users can only manage their profiles.
  *
  * Data Structure:
- *   - /users/{userId}: Stores user profiles.
- *   - /users/{userId}/files/{fileId}: Stores files uploaded by the user.
- *   - /call_sessions/{callSessionId}: Stores call session details.
+ * - /users/{userId}: Stores individual user profiles. Access is restricted to the owning user.
+ * - /messages/{messageId}: Stores chat messages. All authenticated users can read messages, and all authenticated users can create messages.
  *
  * Key Security Decisions:
- *   - User listing is disallowed to protect user privacy.
- *   - The rules explicitly deny any ambiguous access to enforce a default-deny posture.
+ * - User listing is explicitly denied for privacy.
+ * - Public read access is granted to the /messages collection, assuming it contains general chat data.
+ * - Users are only able to create messages, but no edit or delete them.
  *
  * Denormalization for Authorization:
- *   - CallSession documents denormalize `callerId` and `calleeId` to enable simple, direct authorization checks.
+ *  -The current data structure doesn't require denormalization.
+ *
+ * Structural Segregation:
+ * - No structural segregation is needed as the application has basic data.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Protects user profiles. Only the user themselves can read and write their profile.
+     * @description Checks if the user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user ID matches the provided user ID.
+     * @param {string} userId - The user ID to compare against the authenticated user's ID.
+     * @return {boolean} True if the user is signed in and the UID matches, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user is the owner of the existing document
+     * @param {string} userId - The user ID to compare against the authenticated user's ID.
+     * @return {boolean} True if the user is signed in and the UID matches, and the resource exists; otherwise, false.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for user profiles.
      * @path /users/{userId}
-     * @allow (create) User with ID 'user_abc' can create their profile.
-     * @allow (get) User with ID 'user_abc' can read their profile.
-     * @allow (update) User with ID 'user_abc' can update their profile.
-     * @allow (delete) User with ID 'user_abc' can delete their profile.
-     * @deny (create) User with ID 'user_def' cannot create a profile with ID 'user_abc'.
-     * @deny (get) User with ID 'user_def' cannot read the profile of 'user_abc'.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with ID 'user123' can create their own profile.
+     *    - request.auth.uid: 'user123'
+     *    - request.resource.data.id: 'user123'
+     * @allow (get) User with ID 'user123' can read their own profile.
+     *    - request.auth.uid: 'user123'
+     * @allow (update) User with ID 'user123' can update their own profile.
+     *    - request.auth.uid: 'user123'
+     * @allow (delete) User with ID 'user123' can delete their own profile.
+     *    - request.auth.uid: 'user123'
+     * @deny (create) User with ID 'user456' cannot create a profile for user 'user123'.
+     *    - request.auth.uid: 'user456'
+     *    - request.resource.data.id: 'user123'
+     * @deny (get) User with ID 'user456' cannot read profile for user 'user123'.
+     *    - request.auth.uid: 'user456'
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
       allow get: if isOwner(userId);
-      allow list: if false; // User listing is not permitted.
-
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) && resource.data.id == userId;
-      allow delete: if isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Protects files uploaded by users. Only the owning user can access these files.
-     * @path /users/{userId}/files/{fileId}
-     * @allow (create) User 'user_abc' can create a file in their files collection.
-     * @allow (get) User 'user_abc' can read a file in their files collection.
-     * @allow (update) User 'user_abc' can update a file in their files collection.
-     * @allow (delete) User 'user_abc' can delete a file in their files collection.
-     * @deny (create) User 'user_def' cannot create a file in user_abc's files collection.
-     * @deny (get) User 'user_def' cannot read a file in user_abc's files collection.
-     * @principle Enforces path-based ownership for all file operations.
-     */
-    match /users/{userId}/files/{fileId} {
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Controls access to call session data. Only the caller and callee can access the call session.
-     * @path /call_sessions/{callSessionId}
-     * @allow (create) User 'user_abc' can create a call session where they are either the caller or callee.
-     * @allow (get) User 'user_abc' can read a call session where they are either the caller or callee.
-     * @allow (update) User 'user_abc' can update a call session where they are either the caller or callee.
-     * @allow (delete) User 'user_abc' can delete a call session where they are either the caller or callee.
-     * @deny (get) User 'user_def' cannot read a call session where they are not the caller or callee.
-     * @principle Grants access based on participation in the call session (caller or callee).
-     */
-    match /call_sessions/{callSessionId} {
-      function isParticipant() {
-        return request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.calleeId;
-      }
-
-      function isCreatingParticipant() {
-        return request.auth.uid == request.resource.data.callerId || request.auth.uid == request.resource.data.calleeId;
-      }
-
-      allow get: if isParticipant();
       allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
 
-      allow create: if isCreatingParticipant();
-      allow update: if isParticipant() && resource != null;
-      allow delete: if isParticipant() && resource != null;
+    /**
+     * @description Rules for chat messages.
+     * @path /messages/{messageId}
+     * @allow (get) Any signed-in user can read any message.
+     * @allow (list) Any signed-in user can list messages.
+     * @allow (create) Any signed-in user can create a message.
+     * @deny (update) No user can update a message.
+     * @deny (delete) No user can delete a message.
+     * @principle Public read access with authenticated writes.
+     */
+    match /messages/{messageId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }
