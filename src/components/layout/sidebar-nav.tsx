@@ -15,7 +15,6 @@ import { Logo, LogoIcon } from '@/components/logo';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/tasks', label: 'Tasks', icon: ClipboardList },
   { href: '/chat', label: 'Collaboration', icon: MessageSquare },
   { href: '/conference', label: 'Conference', icon: Video },
 ];
