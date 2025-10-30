@@ -22,3 +22,21 @@ export type Kpi = {
   changeType: 'increase' | 'decrease';
   description: string;
 };
+
+export type Task = {
+    id: string;
+    title: string;
+    description: string;
+    status: 'To Do' | 'In Progress' | 'Done';
+    assigneeId?: string;
+    assigneeName?: string;
+    assigneeAvatar?: string;
+    createdAt: any;
+};
+
+export type UserProfile = {
+    id: string;
+    name: string;
+    email: string;
+    profilePictureUrl?: string;
+};

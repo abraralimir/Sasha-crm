@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BotMessageSquare, Home, LayoutGrid, MessageSquare, Users, Video } from 'lucide-react';
+import { BotMessageSquare, Home, LayoutGrid, MessageSquare, Users, Video, ClipboardList } from 'lucide-react';
 
 import {
   Sidebar,
@@ -15,7 +15,7 @@ import { Logo, LogoIcon } from '@/components/logo';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/leads', label: 'Leads', icon: Users },
+  { href: '/tasks', label: 'Tasks', icon: ClipboardList },
   { href: '/chat', label: 'Collaboration', icon: MessageSquare },
   { href: '/conference', label: 'Conference', icon: Video },
 ];

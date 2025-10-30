@@ -57,7 +57,41 @@
           "description": "The server timestamp when the message was created."
         }
       },
-      "required": ["text", "userId", "userName", "timestamp"]
+      "required": [
+        "text",
+        "userId",
+        "userName",
+        "timestamp"
+      ]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "Represents a potential customer or deal.",
+      "type": "object",
+      "properties": {
+        "contactName": { "type": "string" },
+        "companyName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "status": { "type": "string", "enum": ["New", "Contacted", "Proposal", "Closed", "Lost"] },
+        "potentialRevenue": { "type": "number" },
+        "lastContacted": { "type": "string", "format": "date-time" }
+      },
+      "required": ["contactName", "companyName", "email", "status"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Represents a single task or ticket.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["To Do", "In Progress", "Done"] },
+        "assigneeId": { "type": "string" },
+        "assigneeName": { "type": "string" },
+        "assigneeAvatar": { "type": "string", "format": "uri" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["title", "status", "createdAt"]
     }
   },
   "auth": {
@@ -72,8 +106,16 @@
       "description": "Stores user profiles. Secured by user ID. Each user can only access their own profile."
     },
     "/messages/{messageId}": {
-        "schema": { "$ref": "#/entities/ChatMessage"},
-        "description": "Stores all group chat messages. All authenticated users can read and create messages."
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Stores all group chat messages. All authenticated users can read and create messages."
+    },
+    "/leads/{leadId}": {
+        "schema": { "$ref": "#/entities/Lead" },
+        "description": "Stores lead information. All authenticated users can manage leads."
+    },
+    "/tasks/{taskId}": {
+        "schema": { "$ref": "#/entities/Task" },
+        "description": "Stores tasks. All authenticated users can manage tasks."
     }
   }
 }
