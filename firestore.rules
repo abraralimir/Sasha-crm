@@ -1,110 +1,59 @@
 /**
- * @file Firebase Security Rules for SashaLeads AI.
- *
- * Core Philosophy:
- * This ruleset prioritizes a secure-by-default posture, particularly around user data.
- * It uses a combination of ownership-based access control and authenticated-user access,
- * but strictly prohibits listing all user accounts.
- *
- * Data Structure:
- * - `/users/{userId}`:  Each user's profile information, accessible only to the user themselves.
- * - `/messages/{messageId}`: Group chat messages, accessible to any authenticated user.
- * - `/leads/{leadId}`: Lead data, accessible to any authenticated user.
- * - `/tasks/{taskId}`: Task data, accessible to any authenticated user.
- *
- * Key Security Decisions:
- * - User Listing Disabled: The `list` operation is explicitly denied on `/users` to prevent enumeration of all user accounts.
- * - Authenticated Access: Read and write operations on `messages`, `leads`, and `tasks` are restricted to authenticated users.
- *
- * Denormalization for Authorization:
- *   - The rules do not require denormalization at this stage. All necessary authorization information is present.
+ * @file Firestore Security Rules for SashaLeads AI
+ * @core_philosophy This ruleset is in prototyping mode.  It allows unauthenticated access to all data to bypass authorization errors and permit rapid iteration on the application.  This is NOT suitable for production and MUST be changed before deployment.
+ * @data_structure The data is organized into collections for users, messages, leads, and tasks.
+ * @key_security_decisions Unauthenticated read and write access is granted to all collections. This is a deliberate choice for prototyping only.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profiles. Only the user themselves can read or write their profile.
-     * @path /databases/{database}/documents/users/{userId}
-     * @allow (create) Signed-in user with matching {userId} can create their profile.
-     * @allow (get, update, delete) Signed-in user with matching {userId} can get, update, or delete their profile.
-     * @deny (list) Listing all users is prohibited.
-     * @deny (create) Signed-in user cannot create a profile for another user.
-     * @deny (update, delete) Signed-in user cannot update/delete another user's profile.
-     * @principle Enforces document ownership.
+     * @description Rules for the /users collection. In prototyping mode, all access is allowed.
+     * @path /users/{userId}
+     * @allow (read, write) Any unauthenticated user can read or write any user document.
+     * @deny (none) No requests are denied in this prototyping mode.
+     * @principle Unauthenticated access for prototyping purposes ONLY.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Controls access to group chat messages. All authenticated users can read and create messages.
-     * @path /databases/{database}/documents/messages/{messageId}
-     * @allow (get, list) All signed-in users can read messages.
-     * @allow (create) All signed-in users can create messages.
-     * @deny (update, delete) Only the message owner can update or delete messages.
-     * @principle Allows public read access with authenticated-user writes.
+     * @description Rules for the /messages collection. In prototyping mode, all access is allowed.
+     * @path /messages/{messageId}
+     * @allow (read, write) Any unauthenticated user can read or write any message document.
+     * @deny (none) No requests are denied in this prototyping mode.
+     * @principle Unauthenticated access for prototyping purposes ONLY.
      */
     match /messages/{messageId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update, delete: if false;
-    }
-
-     /**
-      * @description Controls access to lead data. All authenticated users can manage leads.
-      * @path /databases/{database}/documents/leads/{leadId}
-      * @allow (get, list) All signed-in users can read leads.
-      * @allow (create) All signed-in users can create leads.
-      * @deny (update, delete) Only the lead owner can update or delete leads.
-      * @principle Allows authenticated-user read and write access.
-      */
-    match /leads/{leadId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update, delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
 
     /**
-     * @description Controls access to tasks. All authenticated users can manage tasks.
-     * @path /databases/{database}/documents/tasks/{taskId}
-     * @allow (get, list) All signed-in users can read tasks.
-     * @allow (create) All signed-in users can create tasks.
-     * @deny (update, delete) Only the task owner can update or delete tasks.
-     * @principle Allows authenticated-user read and write access.
+     * @description Rules for the /leads collection. In prototyping mode, all access is allowed.
+     * @path /leads/{leadId}
+     * @allow (read, write) Any unauthenticated user can read or write any lead document.
+     * @deny (none) No requests are denied in this prototyping mode.
+     * @principle Unauthenticated access for prototyping purposes ONLY.
+     */
+    match /leads/{leadId} {
+      allow get, list: if true;
+      allow create, update, delete: if true;
+    }
+
+    /**
+     * @description Rules for the /tasks collection. In prototyping mode, all access is allowed.
+     * @path /tasks/{taskId}
+     * @allow (read, write) Any unauthenticated user can read or write any task document.
+     * @deny (none) No requests are denied in this prototyping mode.
+     * @principle Unauthenticated access for prototyping purposes ONLY.
      */
     match /tasks/{taskId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update, delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
   }
 }
