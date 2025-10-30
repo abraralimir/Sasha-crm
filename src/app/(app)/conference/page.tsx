@@ -110,8 +110,9 @@ function ParticipantView({ participantId }: { participantId: string }) {
 }
 
 function Controls() {
-    const { leave, toggleMic, toggleWebcam } = useMeeting();
-    const { startScreenShare, stopScreenShare, screenShareOn } = useParticipant(useMeeting().localParticipant.id);
+    const { leave, toggleMic, toggleWebcam, localParticipant } = useMeeting();
+    const { startScreenShare, stopScreenShare, screenShareOn } = useParticipant(localParticipant.id);
+    
     return (
         <div className="flex justify-center items-center gap-2">
             <Button onClick={() => leave()} variant="destructive" size="icon">
