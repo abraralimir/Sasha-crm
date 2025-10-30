@@ -1,59 +1,94 @@
 /**
- * @file Firestore Security Rules for SashaLeads AI
- * @core_philosophy This ruleset is in prototyping mode.  It allows unauthenticated access to all data to bypass authorization errors and permit rapid iteration on the application.  This is NOT suitable for production and MUST be changed before deployment.
- * @data_structure The data is organized into collections for users, messages, leads, and tasks.
- * @key_security_decisions Unauthenticated read and write access is granted to all collections. This is a deliberate choice for prototyping only.
+ * @fileoverview Firestore Security Rules for SashaLeads AI application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a user-ownership model for user profiles, allowing each
+ * user to read and write their own data. It also allows authenticated users
+ * to freely read and create chat messages, and manage leads and tasks.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores individual user profiles.
+ * - /messages/{messageId}: Stores chat messages accessible to all authenticated users.
+ * - /leads/{leadId}: Stores lead data accessible to all authenticated users.
+ * - /tasks/{taskId}: Stores task data accessible to all authenticated users.
+ *
+ * Key Security Decisions:
+ * - Users can only list other users, but not get their data (corrected from the error).
+ * - Chat messages are publicly readable by authenticated users.
+ * - Lead and task data are manageable by all authenticated users.
+ *
+ * Denormalization for Authorization:
+ *  - The current data structure does not require denormalization, as authorization
+ *    is primarily based on user authentication and ownership of user profiles, or
+ *    open access for messages, leads and tasks.
+ *
+ * Structural Segregation:
+ *  - No structural segregation is currently implemented. All messages are stored
+ *    in a single collection. If private user-specific messages were added, they
+ *    would be stored in a subcollection under the user's document.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Rules for the /users collection. In prototyping mode, all access is allowed.
-     * @path /users/{userId}
-     * @allow (read, write) Any unauthenticated user can read or write any user document.
-     * @deny (none) No requests are denied in this prototyping mode.
-     * @principle Unauthenticated access for prototyping purposes ONLY.
+     * @description Protects user profiles, ensuring only the owner can read their own profile.
+     * @path /databases/{database}/documents/users/{userId}
+     * @allow (get, update, delete) User '05a6ynbVYjV3rgS7xELOiTq1Hts1' can read their own profile.
+     * @deny (get, update, delete) User '05a6ynbVYjV3rgS7xELOiTq1Hts1' cannot read another user's profile.
+     * @allow (create) User '05a6ynbVYjV3rgS7xELOiTq1Hts1' can create their own profile.
+     * @deny (list)  No one can list users.
+     * @principle Enforces document ownership for profile data.
      */
     match /users/{userId} {
-      allow get, list: if true;
-      allow create, update, delete: if true;
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for the /messages collection. In prototyping mode, all access is allowed.
-     * @path /messages/{messageId}
-     * @allow (read, write) Any unauthenticated user can read or write any message document.
-     * @deny (none) No requests are denied in this prototyping mode.
-     * @principle Unauthenticated access for prototyping purposes ONLY.
+     * @description Allows all authenticated users to read and create chat messages.
+     * @path /databases/{database}/documents/messages/{messageId}
+     * @allow (get, list, create) Any authenticated user can read and create messages.
+     * @deny (update, delete) No one can update or delete messages.
+     * @principle Open access for authenticated users, with restrictions on modifications.
      */
     match /messages/{messageId} {
-      allow get, list: if true;
-      allow create, update, delete: if true;
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
     }
 
     /**
-     * @description Rules for the /leads collection. In prototyping mode, all access is allowed.
-     * @path /leads/{leadId}
-     * @allow (read, write) Any unauthenticated user can read or write any lead document.
-     * @deny (none) No requests are denied in this prototyping mode.
-     * @principle Unauthenticated access for prototyping purposes ONLY.
+     * @description Allows all authenticated users to manage leads.
+     * @path /databases/{database}/documents/leads/{leadId}
+     * @allow (get, list, create, update, delete) Any authenticated user can manage leads.
      */
     match /leads/{leadId} {
-      allow get, list: if true;
-      allow create, update, delete: if true;
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Rules for the /tasks collection. In prototyping mode, all access is allowed.
-     * @path /tasks/{taskId}
-     * @allow (read, write) Any unauthenticated user can read or write any task document.
-     * @deny (none) No requests are denied in this prototyping mode.
-     * @principle Unauthenticated access for prototyping purposes ONLY.
+     * @description Allows all authenticated users to manage tasks.
+     * @path /databases/{database}/documents/tasks/{taskId}
+     * @allow (get, list, create, update, delete) Any authenticated user can manage tasks.
      */
     match /tasks/{taskId} {
-      allow get, list: if true;
-      allow create, update, delete: if true;
+      allow get, list, create, update, delete: if isSignedIn();
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
     }
   }
 }
