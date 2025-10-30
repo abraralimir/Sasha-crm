@@ -1,13 +1,12 @@
 'use client';
-import { useMeeting } from '@videosdk.live/react-sdk';
+import { useMeeting, useParticipant } from '@videosdk.live/react-sdk';
 import { Mic, MicOff, Webcam, WebcamOff, PhoneOff, ScreenShare, ScreenShareOff } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
-import { useRouter } from 'next/navigation';
 
-export function Controls() {
-  const { leave, toggleMic, toggleWebcam, startScreenShare, stopScreenShare, localScreenShareOn } = useMeeting();
-  const router = useRouter();
+export function Controls({ participantId }: { participantId: string }) {
+  const { leave, toggleMic, toggleWebcam } = useMeeting();
+  const { screenShareOn, startScreenShare, stopScreenShare } = useParticipant(participantId);
 
   return (
     <div className="flex justify-center">
@@ -22,8 +21,8 @@ export function Controls() {
           <Button onClick={() => toggleWebcam()}>
             <Webcam />
           </Button>
-          <Button onClick={() => localScreenShareOn ? stopScreenShare() : startScreenShare()}>
-            {localScreenShareOn ? <ScreenShareOff /> : <ScreenShare />}
+          <Button onClick={() => screenShareOn ? stopScreenShare() : startScreenShare()}>
+            {screenShareOn ? <ScreenShareOff /> : <ScreenShare />}
           </Button>
         </div>
       </Card>
