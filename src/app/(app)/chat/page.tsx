@@ -1,9 +1,9 @@
-import { ChatInterface } from "@/components/chat/chat-interface";
+import { GroupChat } from "@/components/chat/group-chat";
 
 export default function ChatPage() {
   return (
     <div className="h-[calc(100vh-6rem)]">
-      <ChatInterface />
+      <GroupChat />
     </div>
   );
 }
