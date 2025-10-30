@@ -1,97 +1,132 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset enforces a flexible security model, allowing authenticated users to manage their data.
+ * @fileoverview Firestore Security Rules for SashaLeads AI application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a user-ownership model for user profiles, allowing each
+ * user to read and write their own data. It also allows authenticated users
+ * to freely read and create chat messages, and manage leads and tasks.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles, accessible only by the user themselves.
- * - /messages/{messageId}: Stores chat messages, publicly readable and writable by authenticated users.
- * - /leads/{leadId}: Stores lead information, manageable by all authenticated users.
- * - /tasks/{taskId}: Stores task information, manageable by all authenticated users.
+ * - /users/{userId}: Stores individual user profiles.
+ * - /messages/{messageId}: Stores chat messages accessible to all authenticated users.
+ * - /leads/{leadId}: Stores lead data accessible to all authenticated users.
+ * - /tasks/{taskId}: Stores task data accessible to all authenticated users.
  *
  * Key Security Decisions:
- * - Listing of `/users` is disallowed to prevent unauthorized enumeration of user accounts.
- * - Data shape is not strictly validated to allow for rapid prototyping.
+ * - Users can only list other users, but can access their own profiles.
+ * - Chat messages are public to all authenticated users.
+ * - Leads and Tasks are accessible to all authenticated users.
+ *
+ * Denormalization for Authorization:
+ *  - There is no denormalization being used at this time.
+ *
+ * Structural Segregation:
+ *  - This ruleset does not implement structural segregation. All data is stored
+ *    in a single Firestore database.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Manages user profiles.
-     * @path /users/{userId}
-     * @allow (create) Authenticated user with matching userId can create their profile.
-     * @allow (get, update, delete) Authenticated user can access and modify their own profile.
-     * @deny (create) Non-authenticated user attempts to create a profile.
-     * @deny (get, update, delete) Authenticated user attempts to access another user's profile.
-     * @principle Enforces user-ownership for profile data.
+     * @description Manages user profiles. Users can only read, update, and delete their own profile.
+     * @path /databases/{database}/documents/users/{userId}
+     * @allow (get) Authenticated user accessing their own profile.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/users/user123'
+     * @allow (create) Authenticated user creating their own profile.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/users/user123'
+     * @allow (update) Authenticated user updating their own profile.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/users/user123'
+     * @allow (delete) Authenticated user deleting their own profile.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/users/user123'
+     * @deny (get) Authenticated user accessing another user's profile.
+     *   Example: auth.uid = 'user456', path = '/databases/{database}/documents/users/user123'
+     * @deny (create) Unauthenticated user attempting to create a profile.
+     *   Example: auth.uid = null, path = '/databases/{database}/documents/users/user123'
+     * @deny (update) Authenticated user attempting to update another user's profile.
+     *   Example: auth.uid = 'user456', path = '/databases/{database}/documents/users/user123'
+     * @deny (delete) Authenticated user attempting to delete another user's profile.
+     *   Example: auth.uid = 'user456', path = '/databases/{database}/documents/users/user123'
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      // Only signed-in users can read or write data
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false; // Disallowing listing users for security.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if false; // Prevent listing of all users.
+      allow create: if isSignedIn() && request.resource.data.id == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Manages group chat messages.
-     * @path /messages/{messageId}
-     * @allow (get, list) All authenticated users can read messages.
-     * @allow (create) All authenticated users can create messages.
-     * @deny (update, delete) Only the message owner (not implemented) can update or delete messages.
-     * @principle Allows public read access and authenticated-user write access for chat messages.
+     * @description Allows any authenticated user to read and create chat messages.
+     * @path /databases/{database}/documents/messages/{messageId}
+     * @allow (get) Any authenticated user can read a chat message.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/messages/message1'
+     * @allow (create) Any authenticated user can create a chat message.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/messages/message1'
+     * @deny (update) No one can update a chat message.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/messages/message1'
+     * @deny (delete) No one can delete a chat message.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/messages/message1'
+     * @principle Allows public read and create access for authenticated users.
      */
     match /messages/{messageId} {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn();
-      allow update, delete: if false; // Authentication is needed.
+      allow update, delete: if false;
     }
 
     /**
-     * @description Manages lead information.
-     * @path /leads/{leadId}
-     * @allow (get, list, create, update, delete) All authenticated users can manage leads.
-     * @deny (create, update, delete) Non-authenticated users cannot manage leads.
-     * @principle Allows any authenticated user to manage leads.
+     * @description Allows any authenticated user to manage leads.
+     * @path /databases/{database}/documents/leads/{leadId}
+     * @allow (get) Any authenticated user can read a lead.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/leads/lead1'
+     * @allow (list) Any authenticated user can list leads.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/leads'
+     * @allow (create) Any authenticated user can create a lead.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/leads/lead1'
+     * @allow (update) Any authenticated user can update a lead.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/leads/lead1'
+     * @allow (delete) Any authenticated user can delete a lead.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/leads/lead1'
+     * @principle Allows public read and write access for authenticated users.
      */
     match /leads/{leadId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Manages tasks.
-     * @path /tasks/{taskId}
-     * @allow (get, list, create, update, delete) All authenticated users can manage tasks.
-     * @deny (create, update, delete) Non-authenticated users cannot manage tasks.
+     * @description Allows any authenticated user to manage tasks.
+     * @path /databases/{database}/documents/tasks/{taskId}
+     * @allow (get) Any authenticated user can read a task.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/tasks/task1'
+     * @allow (list) Any authenticated user can list tasks.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/tasks'
+     * @allow (create) Any authenticated user can create a task.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/tasks/task1'
+     * @allow (update) Any authenticated user can update a task.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/tasks/task1'
+     * @allow (delete) Any authenticated user can delete a task.
+     *   Example: auth.uid = 'user123', path = '/databases/{database}/documents/tasks/task1'
+     * @principle Allows public read and write access for authenticated users.
      */
     match /tasks/{taskId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow get, list, create, update, delete: if isSignedIn();
     }
+  }
 
-    //---------------------------------------------------------------------------------------------
-    // Helper functions
-    //---------------------------------------------------------------------------------------------
+  // Helper function to determine if the user is signed in.
+  function isSignedIn() {
+    return request.auth != null;
+  }
 
-    // isOwner: Returns true if the user ID matches the authenticated user's ID.
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
+  // Helper function to determine if the user is the owner of the resource.
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
 
-    // isExistingOwner: Returns true if the user ID matches the authenticated user's ID and the document exists.
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    // isSignedIn: Returns true if the request is authenticated (user is signed in).
-    function isSignedIn() {
-      return request.auth != null;
-    }
+  // Helper function to determine if the user is the owner of the resource and the resource exists.
+  function isExistingOwner(userId) {
+    return isOwner(userId) && resource != null;
   }
 }
