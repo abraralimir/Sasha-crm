@@ -11,7 +11,7 @@ import { authToken, createMeeting } from "@/lib/videosdk";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic, MicOff, Webcam, WebcamOff, ScreenShare, ScreenShareOff, LogOut, Loader2 } from "lucide-react";
+import { Mic, MicOff, Webcam, CameraOff, ScreenShare, ScreenShareOff, LogOut, Loader2 } from "lucide-react";
 
 function JoinScreen({ getMeetingAndToken }: { getMeetingAndToken: (meetingId?: string) => void }) {
     const [meetingId, setMeetingId] = useState<string | null>(null);
@@ -121,7 +121,7 @@ function Controls() {
                 {useMeeting().micOn ? <Mic /> : <MicOff />}
             </Button>
             <Button onClick={() => toggleWebcam()} variant="outline" size="icon">
-                {useMeeting().webcamOn ? <Webcam /> : <WebcamOff />}
+                {useMeeting().webcamOn ? <Webcam /> : <CameraOff />}
             </Button>
             <Button onClick={() => (screenShareOn ? stopScreenShare() : startScreenShare())} variant="outline" size="icon">
                 {screenShareOn ? <ScreenShareOff /> : <ScreenShare />}
