@@ -18,14 +18,19 @@ type Message = {
 
 type VerificationStep = 'awaitingEmail' | 'awaitingCode';
 
-const SPECIAL_EMAIL = 'alimirabrar@gmail.com';
-const SECRET_CODE = '0012';
+const allowedUsers: Record<string, string> = {
+    'alimirabrar@gmail.com': '0012',
+    'saleem@bitstek.io': '0776',
+    'adil@bitstek.io': '0779',
+};
+
 
 export default function VerifyPage() {
   const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: 'Hello! I am Sasha, your AI assistant. To get started, please provide your email address.' }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<VerificationStep>('awaitingEmail');
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [isAccessDenied, setIsAccessDenied] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -65,15 +70,17 @@ export default function VerifyPage() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     if (step === 'awaitingEmail') {
-        if (userMessage.trim().toLowerCase() === SPECIAL_EMAIL) {
+        const email = userMessage.trim().toLowerCase();
+        if (allowedUsers[email]) {
             addMessage('assistant', 'Thank you. Now, please enter the secret code to proceed.');
+            setCurrentUserEmail(email);
             setStep('awaitingCode');
         } else {
             addMessage('assistant', 'You are not a member of Sasha Leads.');
             setIsAccessDenied(true);
         }
-    } else if (step === 'awaitingCode') {
-        if (userMessage.trim() === SECRET_CODE) {
+    } else if (step === 'awaitingCode' && currentUserEmail) {
+        if (userMessage.trim() === allowedUsers[currentUserEmail]) {
             addMessage('assistant', 'Verification successful! Congratulations. You will now be redirected to the sign-up page.');
             toast({
                 title: 'Verification Successful!',
