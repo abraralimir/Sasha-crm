@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bot, Loader2, Send } from 'lucide-react';
-import { verifySignupAccess } from '@/ai/flows/verify-signup-access';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,16 +16,20 @@ type Message = {
   content: string;
 };
 
+type VerificationStep = 'awaitingEmail' | 'awaitingCode';
+
+const SECRET_CODE = '015456669';
+
 export default function VerifyPage() {
   const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: 'Hello! I am Sasha, your AI assistant. To get started, please provide your email address.' }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationStep, setVerificationStep] = useState<VerificationStep>('awaitingEmail');
   const { toast } = useToast();
   const router = useRouter();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Clear any previous verification status when the page loads
     sessionStorage.removeItem('isVerified');
   }, []);
 
@@ -43,41 +46,45 @@ export default function VerifyPage() {
     setInput(e.target.value);
   };
 
+  const addMessage = (role: 'user' | 'assistant', content: string) => {
+    setMessages((prev) => [...prev, { role, content }]);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
-    setMessages((prev) => [...prev, userMessage]);
+    const userMessage = input;
+    addMessage('user', userMessage);
     setInput('');
     setIsLoading(true);
 
-    try {
-      const result = await verifySignupAccess({ userMessage: input });
-      const assistantMessage: Message = { role: 'assistant', content: result.response };
-      setMessages((prev) => [...prev, assistantMessage]);
+    // Simulate thinking time
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-      if (result.isVerified) {
-        toast({
-          title: 'Verification Successful!',
-          description: 'Redirecting you to the sign-up page...',
-        });
-        // Set a flag to indicate verification is complete for this session
-        sessionStorage.setItem('isVerified', 'true');
-        setTimeout(() => router.push('/signup'), 2000);
-      }
-    } catch (error) {
-      console.error('AI verification error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to get a response from the AI.',
-      });
-      const errorMessage: Message = { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
+    if (verificationStep === 'awaitingEmail') {
+        // A simple check for something that looks like an email.
+        if (userMessage.includes('@') && userMessage.includes('.')) {
+            addMessage('assistant', 'Thank you. Now, please enter the secret code to proceed.');
+            setVerificationStep('awaitingCode');
+        } else {
+            addMessage('assistant', 'That does not look like a valid email address. Please try again.');
+        }
+    } else if (verificationStep === 'awaitingCode') {
+        if (userMessage.trim() === SECRET_CODE) {
+            addMessage('assistant', 'Verification successful! Congratulations. You will now be redirected to the sign-up page.');
+            toast({
+                title: 'Verification Successful!',
+                description: 'Redirecting you to the sign-up page...',
+            });
+            sessionStorage.setItem('isVerified', 'true');
+            setTimeout(() => router.push('/signup'), 2000);
+        } else {
+            addMessage('assistant', 'The secret code is incorrect. Please try again.');
+        }
     }
+
+    setIsLoading(false);
   };
 
   return (
