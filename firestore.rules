@@ -1,121 +1,36 @@
-/**
- * @fileoverview Firestore Security Rules for SashaLeads AI application.
- *
- * Core Philosophy:
- * This ruleset prioritizes secure access to user data and collaborative content.
- * It uses a combination of ownership-based access control and shared access patterns.
- * It disallows listing of `/users` to protect user privacy, and it assumes that any data not explicitly
- * secured is off-limits.  All write operations require authentication.
- *
- * Data Structure:
- * - /users/{userId}: User profiles, accessible only by the user themselves.
- * - /messages/{messageId}: Group chat messages, accessible to all authenticated users.
- * - /leads/{leadId}: Lead data, accessible to all authenticated users.
- * - /tasks/{taskId}: Task data, accessible to all authenticated users.
- *
- * Key Security Decisions:
- * - User listing is explicitly denied.
- * - Authenticated users can manage leads and tasks.
- * - Unauthenticated access is generally denied, except for reading public data (if any).
- */
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Helper function to check if a user is signed in.
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
-    /**
-     * @description Controls access to user profiles.
-     * @path /users/{userId}
-     * @allow (create) - If the user's auth UID matches the requested userId.
-     * @allow (get, update, delete) - If the user's auth UID matches the requested userId and the document exists.
-     * @deny (list) - Listing all users is prohibited.
-     * @deny (create, update, delete) - If the user is not the owner.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
-     */
+    // Rules for the 'users' collection
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
+      // Allow authenticated users to read the list of all users.
+      allow list: if isSignedIn();
+      
+      // Allow a user to read their own document.
+      allow get: if isSignedIn() && request.auth.uid == userId;
 
-      function isOwner(userId) {
-        return isSignedIn() && request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      //Prevent collection listing
-      allow list: if false;
-
-      allow get: if isOwner(userId);
-
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-
-      allow delete: if isExistingOwner(userId);
+      // Allow a user to create their own document upon signup.
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      
+      // Allow a user to update their own document.
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      
+      // Disallow deleting user documents.
+      allow delete: if false;
     }
 
-    /**
-     * @description Controls access to group chat messages.
-     * @path /messages/{messageId}
-     * @allow (get, list) - All authenticated users can read messages.
-     * @allow (create) - All authenticated users can create messages.
-     * @deny (update, delete) - Only the owner can update or delete messages, however, there is no ownership implemented in this prototype.
-     * @principle Authenticated users can read and create messages. Owner-only writes are not yet implemented.
-     */
-    match /messages/{messageId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get, list: if isSignedIn();
-
-      allow create: if isSignedIn();
-
-      allow update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-    }
-
-    /**
-     * @description Controls access to leads.
-     * @path /leads/{leadId}
-     * @allow (get, list) - All authenticated users can read leads.
-     * @allow (create, update, delete) - All authenticated users can manage leads.
-     * @principle Authenticated users can manage leads.
-     */
-    match /leads/{leadId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get, list: if isSignedIn();
-
-      allow create: if isSignedIn();
-
-      allow update: if isSignedIn() && resource != null;
-
-      allow delete: if isSignedIn() && resource != null;
-    }
-
-    /**
-     * @description Controls access to tasks.
-     * @path /tasks/{taskId}
-     * @allow (get, list) - All authenticated users can read tasks.
-     * @allow (create, update, delete) - All authenticated users can manage tasks.
-     * @principle Authenticated users can manage tasks.
-     */
-    match /tasks/{taskId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get, list: if isSignedIn();
-
-      allow create: if isSignedIn();
-
-      allow update: if isSignedIn() && resource != null;
-
-      allow delete: if isSignedIn() && resource != null;
+    // Rules for 'messages', 'leads', and 'tasks' collections
+    match /{collection}/{docId} {
+      // Allow any authenticated user to read and write to messages, leads, and tasks.
+      allow read, write: if isSignedIn() && (collection == 'messages' || collection == 'leads' || collection == 'tasks');
     }
   }
 }
