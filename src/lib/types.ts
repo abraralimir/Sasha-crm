@@ -1,18 +1,13 @@
+import { Timestamp } from "firebase/firestore";
+
 export type Lead = {
   id: string;
   contactName: string;
   companyName: string;
   email: string;
-  phone: string;
   status: 'New' | 'Contacted' | 'Proposal' | 'Closed' | 'Lost';
-  potentialRevenue: number;
-  lastContacted: string; // ISO date string
-  avatar: string; // URL
-  notes: string;
-  projectScope: string;
-  projectComplexity: 'Low' | 'Medium' | 'High';
-  historicalData: string;
-  marketTrends: string;
+  potentialRevenue?: number;
+  lastContacted: Timestamp;
 };
 
 export type Kpi = {
@@ -26,12 +21,12 @@ export type Kpi = {
 export type Task = {
     id: string;
     title: string;
-    description: string;
+    description?: string;
     status: 'To Do' | 'In Progress' | 'Done';
     assigneeId?: string;
     assigneeName?: string;
     assigneeAvatar?: string;
-    createdAt: any;
+    createdAt: Timestamp;
 };
 
 export type UserProfile = {
