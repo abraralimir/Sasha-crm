@@ -18,13 +18,15 @@ type Message = {
 
 type VerificationStep = 'awaitingEmail' | 'awaitingCode';
 
-const SECRET_CODE = '015456669';
+const SPECIAL_EMAIL = 'alimirabrar@gmail.com';
+const SECRET_CODE = '0012';
 
 export default function VerifyPage() {
   const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: 'Hello! I am Sasha, your AI assistant. To get started, please provide your email address.' }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [verificationStep, setVerificationStep] = useState<VerificationStep>('awaitingEmail');
+  const [step, setStep] = useState<VerificationStep>('awaitingEmail');
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -62,15 +64,15 @@ export default function VerifyPage() {
     // Simulate thinking time
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    if (verificationStep === 'awaitingEmail') {
-        // A simple check for something that looks like an email.
-        if (userMessage.includes('@') && userMessage.includes('.')) {
+    if (step === 'awaitingEmail') {
+        if (userMessage.trim().toLowerCase() === SPECIAL_EMAIL) {
             addMessage('assistant', 'Thank you. Now, please enter the secret code to proceed.');
-            setVerificationStep('awaitingCode');
+            setStep('awaitingCode');
         } else {
-            addMessage('assistant', 'That does not look like a valid email address. Please try again.');
+            addMessage('assistant', 'You are not a member of Sasha Leads.');
+            setIsAccessDenied(true);
         }
-    } else if (verificationStep === 'awaitingCode') {
+    } else if (step === 'awaitingCode') {
         if (userMessage.trim() === SECRET_CODE) {
             addMessage('assistant', 'Verification successful! Congratulations. You will now be redirected to the sign-up page.');
             toast({
@@ -141,7 +143,7 @@ export default function VerifyPage() {
                     value={input}
                     onChange={handleInputChange}
                     placeholder="Type your message..."
-                    disabled={isLoading}
+                    disabled={isLoading || isAccessDenied}
                     rows={1}
                     className='min-h-0 resize-none'
                     onKeyDown={(e) => {
@@ -151,7 +153,7 @@ export default function VerifyPage() {
                         }
                     }}
                 />
-                <Button type="submit" size="icon" className='shrink-0' disabled={isLoading || !input.trim()}>
+                <Button type="submit" size="icon" className='shrink-0' disabled={isLoading || !input.trim() || isAccessDenied}>
                     <Send className="h-4 w-4" />
                 </Button>
             </div>
