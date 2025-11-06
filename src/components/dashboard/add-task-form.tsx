@@ -9,8 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { addDoc, collection, serverTimestamp, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
@@ -24,6 +24,7 @@ const taskFormSchema = z.object({
 });
 
 export function AddTaskForm() {
+  const { user: currentUser } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -44,8 +45,13 @@ export function AddTaskForm() {
   });
 
   const onSubmit = async (values: z.infer<typeof taskFormSchema>) => {
-    if (!firestore) return;
+    if (!firestore || !currentUser) return;
     const selectedUser = users?.find((u) => u.id === values.assigneeId);
+
+    if (!selectedUser) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not find the selected user.' });
+        return;
+    }
 
     try {
       const tasksCollection = collection(firestore, 'tasks');
@@ -54,8 +60,8 @@ export function AddTaskForm() {
         description: values.description,
         status: values.status,
         assigneeId: values.assigneeId,
-        assigneeName: selectedUser?.name || '',
-        assigneeAvatar: selectedUser?.profilePictureUrl || '',
+        assigneeName: selectedUser.name || '',
+        assigneeAvatar: selectedUser.profilePictureUrl || '',
         createdAt: serverTimestamp(),
       });
 
@@ -63,6 +69,19 @@ export function AddTaskForm() {
         title: 'Task Created',
         description: `Task "${values.title}" has been assigned.`,
       });
+
+      // Create a notification for the assigned user, unless they are assigning it to themselves
+      if (currentUser.uid !== selectedUser.id) {
+        const notificationRef = collection(firestore, 'users', selectedUser.id, 'notifications');
+        await addDoc(notificationRef, {
+            title: 'New Task Assigned',
+            message: `You were assigned: "${values.title}" by ${currentUser.displayName}.`,
+            link: '/tickets',
+            read: false,
+            createdAt: serverTimestamp(),
+        });
+      }
+
       form.reset();
     } catch (error) {
       console.error('Error creating task:', error);

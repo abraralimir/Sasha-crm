@@ -25,6 +25,12 @@ service cloud.firestore {
       
       // Disallow deleting user documents.
       allow delete: if false;
+
+      // Rules for user-specific notifications
+      match /notifications/{notificationId} {
+        // Users can read, create, and update their own notifications
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     // Rules for 'messages', 'leads', and 'tasks' collections

@@ -1,6 +1,7 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserNav } from "@/components/layout/user-nav";
 import { PlatformAiChat } from "../platform-ai-chat";
+import { NotificationBell } from "./notification-bell";
 
 
 export function Header() {
@@ -14,6 +15,7 @@ export function Header() {
       </div>
       <div className="flex items-center gap-2">
         <PlatformAiChat />
+        <NotificationBell />
         <UserNav />
       </div>
     </header>

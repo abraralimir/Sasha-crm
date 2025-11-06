@@ -35,3 +35,12 @@ export type UserProfile = {
     email: string;
     profilePictureUrl?: string;
 };
+
+export type Notification = {
+    id: string;
+    title: string;
+    message: string;
+    link: string;
+    read: boolean;
+    createdAt: Timestamp;
+};

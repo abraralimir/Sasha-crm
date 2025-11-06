@@ -92,6 +92,19 @@
         "createdAt": { "type": "object" }
       },
       "required": ["title", "status", "createdAt"]
+    },
+    "Notification": {
+        "title": "Notification",
+        "description": "Represents a notification for a user.",
+        "type": "object",
+        "properties": {
+            "title": { "type": "string" },
+            "message": { "type": "string" },
+            "link": { "type": "string", "format": "uri-relative" },
+            "read": { "type": "boolean" },
+            "createdAt": { "type": "object" }
+        },
+        "required": ["title", "message", "link", "read", "createdAt"]
     }
   },
   "auth": {
@@ -116,6 +129,10 @@
     "/tasks/{taskId}": {
         "schema": { "$ref": "#/entities/Task" },
         "description": "Stores tasks. All authenticated users can manage tasks."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+        "schema": { "$ref": "#/entities/Notification" },
+        "description": "Stores notifications for a specific user. Users can only access their own notifications."
     }
   }
 }

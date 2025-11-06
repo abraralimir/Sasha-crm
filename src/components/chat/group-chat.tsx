@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Loader2, Send } from 'lucide-react';
-import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { addDoc, collection, serverTimestamp, query, orderBy, getDocs, writeBatch } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Timestamp } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
 
 type ChatMessage = {
   id: string;
@@ -57,6 +58,36 @@ export function GroupChat() {
     setInput(e.target.value);
   };
 
+  const createNotificationsForOtherUsers = async (messageText: string) => {
+    if (!firestore || !user) return;
+  
+    try {
+      const usersSnapshot = await getDocs(collection(firestore, 'users'));
+      const otherUsers = usersSnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as UserProfile))
+        .filter(u => u.id !== user.uid);
+  
+      const batch = writeBatch(firestore);
+  
+      otherUsers.forEach(otherUser => {
+        const notificationRef = doc(collection(firestore, 'users', otherUser.id, 'notifications'));
+        batch.set(notificationRef, {
+          title: `New message from ${user.displayName}`,
+          message: messageText.substring(0, 50) + (messageText.length > 50 ? '...' : ''),
+          link: '/chat',
+          read: false,
+          createdAt: serverTimestamp(),
+        });
+      });
+  
+      await batch.commit();
+    } catch (error) {
+      console.error("Failed to create chat notifications:", error);
+      // Optional: show a toast to the sender, but might be noisy
+    }
+  };
+  
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || !user || !messagesCollection) return;
@@ -66,13 +97,19 @@ export function GroupChat() {
     setInput('');
 
     try {
-      await addDoc(messagesCollection, {
+      const messagePayload = {
         text: messageText,
         userId: user.uid,
         userName: user.displayName || 'Anonymous User',
         userAvatar: user.photoURL || null,
         timestamp: serverTimestamp(),
-      });
+      };
+      // Send the message
+      await addDoc(messagesCollection, messagePayload);
+
+      // In parallel, create notifications for other users
+      await createNotificationsForOtherUsers(messageText);
+
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
