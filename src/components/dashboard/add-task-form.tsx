@@ -16,7 +16,6 @@ import { Loader2 } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { useEffect } from 'react';
-import { ScrollArea } from '../ui/scroll-area';
 
 const taskFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),

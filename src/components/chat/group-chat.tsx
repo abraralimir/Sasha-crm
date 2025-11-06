@@ -318,19 +318,15 @@ export function GroupChat() {
       </Card>
       
       <Dialog open={openCreateTicketDialog} onOpenChange={setOpenCreateTicketDialog}>
-        <DialogContent className="max-w-lg w-full">
+        <DialogContent className="max-w-lg">
             <DialogHeader>
                 <DialogTitle>Create a New Ticket</DialogTitle>
                 <DialogDescription>Convert this message into an actionable task.</DialogDescription>
             </DialogHeader>
-            <ScrollArea className="max-h-[70vh] p-1">
-                <div className="p-4">
-                    <AddTaskForm
-                        defaultTitle={ticketMessage?.type === 'text' ? ticketMessage.text : ticketMessage?.fileName}
-                        onTaskCreated={() => setOpenCreateTicketDialog(false)}
-                    />
-                </div>
-            </ScrollArea>
+            <AddTaskForm
+                defaultTitle={ticketMessage?.type === 'text' ? ticketMessage.text : ticketMessage?.fileName}
+                onTaskCreated={() => setOpenCreateTicketDialog(false)}
+            />
         </DialogContent>
       </Dialog>
     </>
