@@ -9,10 +9,11 @@ import { AddLeadForm } from '@/components/dashboard/add-lead-form';
 import { RegisteredUsers } from '@/components/dashboard/registered-users';
 import { OverviewChart } from '@/components/dashboard/overview-chart';
 import { KpiCard } from '@/components/dashboard/kpi-card';
-import { DollarSign, Users, ListChecks, Loader2 } from 'lucide-react';
+import { DollarSign, Users, ListChecks } from 'lucide-react';
 import type { Lead, Task } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { subDays } from 'date-fns';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 type LeadWithId = Lead & { id: string; lastContacted: Timestamp };
 
@@ -111,4 +112,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
