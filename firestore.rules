@@ -28,8 +28,11 @@ service cloud.firestore {
 
       // Rules for user-specific notifications
       match /notifications/{notificationId} {
-        // Users can read, create, and update their own notifications
-        allow read, write: if isSignedIn() && request.auth.uid == userId;
+        // Allow any authenticated user to create a notification for another user (e.g., for task assignment).
+        allow create: if isSignedIn();
+        
+        // Only allow the user to read, update, or delete their own notifications.
+        allow read, update, delete: if isSignedIn() && request.auth.uid == userId;
       }
     }
 
