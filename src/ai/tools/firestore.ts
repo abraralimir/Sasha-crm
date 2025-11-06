@@ -8,6 +8,8 @@ import { z } from 'genkit';
 import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
+let db: admin.firestore.Firestore;
+
 // Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
   try {
@@ -16,12 +18,14 @@ if (!admin.apps.length) {
       databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
       projectId: firebaseConfig.projectId,
     });
+    db = admin.firestore();
   } catch (e) {
     console.error('Firebase admin initialization error', e);
   }
+} else {
+    db = admin.firestore();
 }
 
-const db = admin.firestore();
 
 // Tool to get all leads
 export const getLeadsTool = ai.defineTool(
@@ -83,7 +87,7 @@ export const getTasksTool = ai.defineTool(
         title: z.string(),
         description: z.string().optional(),
         status: z.string(),
-        assigneeName: z_string().optional(),
+        assigneeName: z.string().optional(),
         createdAt: z.string(),
       })
     ),
