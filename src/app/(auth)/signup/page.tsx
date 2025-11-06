@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -39,7 +38,6 @@ const formSchema = z.object({
 });
 
 export default function SignupPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -65,7 +63,6 @@ export default function SignupPage() {
         title: "Account Created",
         description: "You have been successfully signed up. Redirecting...",
       });
-      // The auth layout's useEffect will handle the redirect on user state change.
     } catch (error: any) {
       console.error("Signup error:", error);
       let description = "An unexpected error occurred.";
@@ -93,11 +90,11 @@ export default function SignupPage() {
   };
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">Create an Account</CardTitle>
+        <CardTitle className="text-2xl font-headline tracking-tight">Create an Account</CardTitle>
         <CardDescription>
-          Enter your information to create a new account.
+          Enter your information to get started with SashaLeads.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -149,7 +146,7 @@ export default function SignupPage() {
         </Form>
         <div className="mt-4 text-center text-sm">
           Already have an account?{" "}
-          <Link href="/login" className="underline">
+          <Link href="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
             Sign in
           </Link>
         </div>

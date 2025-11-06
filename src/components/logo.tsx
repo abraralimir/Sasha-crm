@@ -5,7 +5,7 @@ export function Logo({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <BotMessageSquare className="h-7 w-7 text-primary" />
-      <h1 className="text-xl font-bold text-foreground">SashaLeads AI</h1>
+      <h1 className="text-xl font-bold tracking-tighter text-foreground font-headline">SashaLeads AI</h1>
     </div>
   );
 }

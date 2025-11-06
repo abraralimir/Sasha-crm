@@ -19,8 +19,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   if (isUserLoading || !user) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin" />
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -30,7 +30,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
       <SidebarNav />
       <SidebarInset>
         <Header />
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );
@@ -38,6 +38,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-      <AppContent>{children}</AppContent>
+      <div className="dark">
+        <AppContent>{children}</AppContent>
+      </div>
   );
 }

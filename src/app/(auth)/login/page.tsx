@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { Loader2 } from "lucide-react";
 
@@ -35,7 +34,6 @@ const formSchema = z.object({
 });
 
 export default function LoginPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
   
@@ -55,7 +53,6 @@ export default function LoginPage() {
         title: "Login Successful",
         description: "Redirecting to your dashboard...",
       });
-      // The auth layout's useEffect will handle the redirect on user state change.
     } catch (error: any) {
       console.error("Login error:", error);
       let description = "An unexpected error occurred.";
@@ -71,11 +68,11 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">Welcome Back</CardTitle>
+        <CardTitle className="text-2xl font-headline tracking-tight">Welcome Back</CardTitle>
         <CardDescription>
-          Enter your email below to login to your account.
+          Enter your credentials to access your account.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -114,7 +111,7 @@ export default function LoginPage() {
         </Form>
         <div className="mt-4 text-center text-sm">
           Need to create an account?{" "}
-          <Link href="/signup" className="underline">
+          <Link href="/signup" className="font-semibold text-primary underline-offset-4 hover:underline">
             Sign up
           </Link>
         </div>

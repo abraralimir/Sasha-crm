@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { LogoIcon } from '@/components/logo';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -97,9 +98,9 @@ export default function VerifyPage() {
   };
 
   return (
-    <Card className="w-full max-w-lg">
+    <Card className="w-full max-w-lg border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">Account Verification</CardTitle>
+        <CardTitle className="text-2xl font-headline tracking-tight">Account Verification</CardTitle>
         <CardDescription>Please verify your access with Sasha AI to proceed.</CardDescription>
       </CardHeader>
       <CardContent className="h-[30rem] flex flex-col">
@@ -111,20 +112,22 @@ export default function VerifyPage() {
                 className={cn('flex items-start gap-3', message.role === 'user' ? 'justify-end' : 'justify-start')}
               >
                  {message.role === 'assistant' && (
-                  <Avatar className="h-8 w-8 border bg-primary">
-                    <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
+                  <Avatar className="h-8 w-8 border-2 border-primary/50">
+                    <AvatarFallback className="bg-primary/20 text-primary">
+                        <LogoIcon className="h-5 w-5" />
+                    </AvatarFallback>
                   </Avatar>
                 )}
                 <div
                   className={cn(
-                    'rounded-lg px-3 py-2 max-w-[80%] whitespace-pre-wrap',
+                    'rounded-lg px-3 py-2 max-w-[80%] whitespace-pre-wrap shadow-sm',
                     message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
                   )}
                 >
                   <p className="text-sm">{message.content}</p>
                 </div>
                  {message.role === 'user' && (
-                  <Avatar className="h-8 w-8 border">
+                  <Avatar className="h-8 w-8 border border-border">
                     <AvatarFallback>You</AvatarFallback>
                   </Avatar>
                 )}
@@ -132,10 +135,12 @@ export default function VerifyPage() {
             ))}
             {isLoading && (
                <div className='flex items-start gap-3 justify-start'>
-                  <Avatar className="h-8 w-8 border bg-primary">
-                    <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
+                  <Avatar className="h-8 w-8 border-2 border-primary/50">
+                     <AvatarFallback className="bg-primary/20 text-primary">
+                        <LogoIcon className="h-5 w-5" />
+                    </AvatarFallback>
                   </Avatar>
-                  <div className='rounded-lg px-3 py-2 max-w-[80%] bg-secondary flex items-center'>
+                  <div className='rounded-lg px-3 py-2 max-w-[80%] bg-secondary flex items-center shadow-sm'>
                       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
               </div>
@@ -145,14 +150,14 @@ export default function VerifyPage() {
       </CardContent>
       <CardFooter className="border-t p-4">
         <form onSubmit={handleSubmit} className="w-full">
-            <div className='flex items-end gap-2'>
+            <div className='relative flex items-center'>
                 <Textarea
                     value={input}
                     onChange={handleInputChange}
                     placeholder="Type your message..."
                     disabled={isLoading || isAccessDenied}
                     rows={1}
-                    className='min-h-0 resize-none'
+                    className='min-h-0 resize-none pr-12'
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -160,7 +165,7 @@ export default function VerifyPage() {
                         }
                     }}
                 />
-                <Button type="submit" size="icon" className='shrink-0' disabled={isLoading || !input.trim() || isAccessDenied}>
+                <Button type="submit" size="icon" className='absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full' disabled={isLoading || !input.trim() || isAccessDenied}>
                     <Send className="h-4 w-4" />
                 </Button>
             </div>
