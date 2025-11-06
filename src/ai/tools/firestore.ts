@@ -6,13 +6,19 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import * as admin from 'firebase-admin';
+import { firebaseConfig } from '@/firebase/config';
 
 // Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
-  admin.initializeApp({
-    // projectId and other credentials will be automatically picked up from the environment
-    // when deployed on Google Cloud infrastructure like Firebase App Hosting.
-  });
+  try {
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+      databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
+      projectId: firebaseConfig.projectId,
+    });
+  } catch (e) {
+    console.error('Firebase admin initialization error', e);
+  }
 }
 
 const db = admin.firestore();
@@ -77,7 +83,7 @@ export const getTasksTool = ai.defineTool(
         title: z.string(),
         description: z.string().optional(),
         status: z.string(),
-        assigneeName: z.string().optional(),
+        assigneeName: z_string().optional(),
         createdAt: z.string(),
       })
     ),
@@ -115,3 +121,39 @@ export const getTasksTool = ai.defineTool(
     }
   }
 );
+
+// Tool to get all users
+export const getUsersTool = ai.defineTool(
+    {
+      name: 'getUsers',
+      description: 'Retrieves a list of all registered users.',
+      inputSchema: z.object({}),
+      outputSchema: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          email: z.string(),
+        })
+      ),
+    },
+    async () => {
+      console.log('getUsersTool invoked');
+      try {
+        const usersSnapshot = await db.collection('users').get();
+        if (usersSnapshot.empty) {
+          return [];
+        }
+        return usersSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name || '',
+            email: data.email || '',
+          };
+        });
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        return [];
+      }
+    }
+  );

@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getLeadsTool, getTasksTool } from '../tools/firestore';
+import { getLeadsTool, getTasksTool, getUsersTool } from '../tools/firestore';
 
 const PlatformAwareAIChatInputSchema = z.object({
   query: z.string().describe('The user query for the AI chat.'),
@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
   name: 'platformAwareAIChatPrompt',
   input: {schema: PlatformAwareAIChatInputSchema},
   output: {schema: PlatformAwareAIChatOutputSchema},
-  tools: [getLeadsTool, getTasksTool],
+  tools: [getLeadsTool, getTasksTool, getUsersTool],
   prompt: `You are Sasha AI, an expert assistant with real-time knowledge of this CRM platform.
   Your current user's ID is {{userId}}.
   Use the available tools to access live data about leads, tasks (also called tickets), and users to answer questions.
@@ -41,6 +41,7 @@ const prompt = ai.definePrompt({
   - "Show me all new leads"
   - "What tasks are assigned to Jane Doe?"
   - "Summarize the ticket about the Innovate Inc. follow-up"
+  - "List all registered users"
 
   Current Date: ${new Date().toLocaleDateString()}
   Query: {{{query}}}`,
