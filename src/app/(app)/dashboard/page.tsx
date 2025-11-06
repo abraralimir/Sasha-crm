@@ -7,7 +7,6 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { AddTaskForm } from '@/components/dashboard/add-task-form';
 import { AddLeadForm } from '@/components/dashboard/add-lead-form';
 import { RegisteredUsers } from '@/components/dashboard/registered-users';
-import { OverviewChart } from '@/components/dashboard/overview-chart';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { DollarSign, Users, ListChecks } from 'lucide-react';
 import type { Lead, Task } from '@/lib/types';
@@ -100,7 +99,6 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <OverviewChart />
           <RegisteredUsers />
         </div>
 
