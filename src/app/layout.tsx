@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 export const metadata: Metadata = {
   title: 'SashaLeads AI',
   description: 'AI-Powered Lead Management and Analytics',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
