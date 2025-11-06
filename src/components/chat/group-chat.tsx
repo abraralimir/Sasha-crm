@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -22,6 +23,7 @@ import {
 import { AddTaskForm } from '../dashboard/add-task-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { enableAIChatWithFileContext } from '@/ai/flows/ai-chat-with-file-context';
+import { addDocumentNonBlocking } from '@/firebase';
 
 type ChatMessage = {
   id: string;
@@ -86,52 +88,57 @@ export function GroupChat() {
   
       otherUsers.forEach(otherUser => {
         const notificationRef = doc(collection(firestore, 'users', otherUser.id, 'notifications'));
-        batch.set(notificationRef, {
+        const notificationPayload = {
           title: `New message from ${user.displayName}`,
           message: messageText.substring(0, 50) + (messageText.length > 50 ? '...' : ''),
           link: '/chat',
           read: false,
           createdAt: serverTimestamp(),
-        });
+        };
+        batch.set(notificationRef, notificationPayload);
       });
   
       await batch.commit();
     } catch (error) {
       console.error("Failed to create chat notifications:", error);
+      // Not re-throwing here as it's a non-critical background task.
+      // A more robust system might use a different error handling strategy.
     }
   };
 
-  const sendMessage = async (messagePayload: Omit<ChatMessage, 'id' | 'timestamp'> & { timestamp: any }) => {
+  const sendMessage = (messagePayload: Omit<ChatMessage, 'id' | 'timestamp'> & { timestamp: any }) => {
     if (!messagesCollection) return;
     setIsLoading(true);
 
-    try {
-      await addDoc(messagesCollection, messagePayload);
-      if (messagePayload.type === 'text') {
-        await createNotificationsForOtherUsers(messagePayload.text);
-      } else if (messagePayload.fileName) {
-        await createNotificationsForOtherUsers(`File: ${messagePayload.fileName}`);
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to send message.',
+    addDocumentNonBlocking(messagesCollection, messagePayload)
+      .then(() => {
+          if (messagePayload.type === 'text') {
+            createNotificationsForOtherUsers(messagePayload.text);
+          } else if (messagePayload.fileName) {
+            createNotificationsForOtherUsers(`File: ${messagePayload.fileName}`);
+          }
+      })
+      .catch((error) => {
+          console.error('Error sending message:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to send message.',
+          });
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || !user) return;
 
     const messageText = input;
     setInput('');
 
-    await sendMessage({
+    sendMessage({
       type: 'text',
       text: messageText,
       userId: user.uid,
