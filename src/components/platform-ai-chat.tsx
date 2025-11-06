@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import type { Lead, Task, UserProfile } from '@/lib/types';
+import type { Lead, Task, UserProfile, FinancialEntry } from '@/lib/types';
 
 
 type Message = {
@@ -40,10 +40,13 @@ export function PlatformAiChat() {
   const leadsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'leads') : null, [firestore]);
   const tasksCollection = useMemoFirebase(() => firestore ? collection(firestore, 'tasks') : null, [firestore]);
   const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
+  const financialsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'financials') : null, [firestore]);
+
 
   const { data: leads, isLoading: leadsLoading } = useCollection<Lead>(leadsCollection);
   const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksCollection);
   const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersCollection);
+  const { data: financials, isLoading: financialsLoading } = useCollection<FinancialEntry>(financialsCollection);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,6 +69,7 @@ export function PlatformAiChat() {
         leadsJson: JSON.stringify(leads || []),
         tasksJson: JSON.stringify(tasks || []),
         usersJson: JSON.stringify(users || []),
+        financialsJson: JSON.stringify(financials || []),
       };
       const result = await platformAwareAIChat(chatInput);
       const assistantMessage: Message = { role: 'assistant', content: result.response };
@@ -83,7 +87,7 @@ export function PlatformAiChat() {
     }
   };
   
-  const isDataLoading = leadsLoading || tasksLoading || usersLoading;
+  const isDataLoading = leadsLoading || tasksLoading || usersLoading || financialsLoading;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

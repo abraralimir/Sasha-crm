@@ -17,6 +17,7 @@ const PlatformAwareAIChatInputSchema = z.object({
   leadsJson: z.string().describe('A JSON string representing all the leads in the system.'),
   tasksJson: z.string().describe('A JSON string representing all the tasks/tickets in the system.'),
   usersJson: z.string().describe('A JSON string representing all the users in the system.'),
+  financialsJson: z.string().describe('A JSON string representing all financial entries in the system.'),
 });
 export type PlatformAwareAIChatInput = z.infer<typeof PlatformAwareAIChatInputSchema>;
 
@@ -35,11 +36,12 @@ const prompt = ai.definePrompt({
   output: {schema: PlatformAwareAIChatOutputSchema},
   prompt: `You are Sasha AI, an expert assistant with real-time knowledge of this CRM platform.
   Your current user's ID is {{userId}}.
-  You have been provided with the full dataset for leads, tasks, and users as JSON data. Use this data as your primary source of truth to answer any questions.
+  You have been provided with the full dataset for leads, tasks, users, and financials as JSON data. Use this data as your primary source of truth to answer any questions.
 
   Leads Data: {{{leadsJson}}}
   Tasks/Tickets Data: {{{tasksJson}}}
   Users Data: {{{usersJson}}}
+  Financials Data: {{{financialsJson}}}
 
   Be helpful and provide detailed, actionable information based on the provided data.
 
@@ -48,6 +50,7 @@ const prompt = ai.definePrompt({
   - "What tasks are assigned to Jane Doe?"
   - "Summarize the ticket about the Innovate Inc. follow-up"
   - "List all registered users"
+  - "What was our biggest expense last month?"
 
   Current Date: ${new Date().toLocaleDateString()}
   Query: {{{query}}}`,

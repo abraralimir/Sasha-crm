@@ -120,6 +120,20 @@
             "createdAt": { "type": "object" }
         },
         "required": ["title", "message", "link", "read", "createdAt"]
+    },
+    "FinancialEntry": {
+        "title": "Financial Entry",
+        "description": "Represents a single financial entry (income, expense, or investment).",
+        "type": "object",
+        "properties": {
+            "description": { "type": "string" },
+            "amount": { "type": "number" },
+            "type": { "type": "string", "enum": ["Income", "Expense", "Investment"] },
+            "category": { "type": "string" },
+            "date": { "type": "object" },
+            "notes": { "type": "string" }
+        },
+        "required": ["description", "amount", "type", "category", "date"]
     }
   },
   "auth": {
@@ -144,6 +158,10 @@
     "/tasks/{taskId}": {
         "schema": { "$ref": "#/entities/Task" },
         "description": "Stores tasks. All authenticated users can manage tasks."
+    },
+    "/financials/{financialEntryId}": {
+        "schema": { "$ref": "#/entities/FinancialEntry" },
+        "description": "Stores financial entries. All authenticated users can manage financials."
     },
     "/users/{userId}/notifications/{notificationId}": {
         "schema": { "$ref": "#/entities/Notification" },

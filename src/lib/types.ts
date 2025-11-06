@@ -44,3 +44,13 @@ export type Notification = {
     read: boolean;
     createdAt: Timestamp;
 };
+
+export type FinancialEntry = {
+    id: string;
+    description: string;
+    amount: number;
+    type: 'Income' | 'Expense' | 'Investment';
+    category: string;
+    date: Timestamp;
+    notes?: string;
+};

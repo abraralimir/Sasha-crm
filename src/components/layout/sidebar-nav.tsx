@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, MessageSquare, Users, Video, ClipboardList } from 'lucide-react';
+import { LayoutGrid, MessageSquare, Users, Video, ClipboardList, CircleDollarSign } from 'lucide-react';
 
 import {
   Sidebar,
@@ -17,6 +17,7 @@ const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
   { href: '/leads', label: 'Leads', icon: Users },
   { href: '/tickets', label: 'Tickets', icon: ClipboardList },
+  { href: '/financials', label: 'Financials', icon: CircleDollarSign },
   { href: '/chat', label: 'Collaboration', icon: MessageSquare },
   { href: '/conference', label: 'Conference', icon: Video },
 ];
