@@ -2,175 +2,184 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bot, Loader2, Send } from 'lucide-react';
+import { Loader2, ArrowRight, Bot, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { LogoIcon } from '@/components/logo';
+import { motion, AnimatePresence } from 'framer-motion';
 
-type Message = {
-  role: 'user' | 'assistant';
-  content: string;
-};
-
-type VerificationStep = 'awaitingEmail' | 'awaitingCode';
+type VerificationStep = 'start' | 'email' | 'code' | 'denied' | 'success';
 
 const allowedUsers: Record<string, string> = {
-    'alimirabrar@gmail.com': '0012',
-    'saleem@bitstek.io': '0776',
-    'adil@bitstek.io': '0779',
+  'alimirabrar@gmail.com': '0012',
+  'saleem@bitstek.io': '0776',
+  'adil@bitstek.io': '0779',
 };
 
-
 export default function VerifyPage() {
-  const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: 'Hello! I am Sasha, your AI assistant. To get started, please provide your email address.' }]);
+  const [step, setStep] = useState<VerificationStep>('start');
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<VerificationStep>('awaitingEmail');
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
-  const [isAccessDenied, setIsAccessDenied] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const { toast } = useToast();
   const router = useRouter();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     sessionStorage.removeItem('isVerified');
+    // Animate to email step after initial greeting
+    const timer = setTimeout(() => setStep('email'), 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-        const viewport = scrollAreaRef.current.querySelector('div');
-        if (viewport) {
-            viewport.scrollTop = viewport.scrollHeight;
-        }
+    if ((step === 'email' || step === 'code') && inputRef.current) {
+      inputRef.current.focus();
     }
-  }, [messages]);
+  }, [step]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
-  };
-
-  const addMessage = (role: 'user' | 'assistant', content: string) => {
-    setMessages((prev) => [...prev, { role, content }]);
+    if (errorMessage) setErrorMessage('');
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage = input;
-    addMessage('user', userMessage);
-    setInput('');
     setIsLoading(true);
+    setErrorMessage('');
 
-    // Simulate thinking time
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 600));
 
-    if (step === 'awaitingEmail') {
-        const email = userMessage.trim().toLowerCase();
-        if (allowedUsers[email]) {
-            addMessage('assistant', 'Thank you. Now, please enter the secret code to proceed.');
-            setCurrentUserEmail(email);
-            setStep('awaitingCode');
-        } else {
-            addMessage('assistant', 'You are not a member of Sasha Leads.');
-            setIsAccessDenied(true);
-        }
-    } else if (step === 'awaitingCode' && currentUserEmail) {
-        if (userMessage.trim() === allowedUsers[currentUserEmail]) {
-            addMessage('assistant', 'Verification successful! Congratulations. You will now be redirected to the sign-up page.');
-            toast({
-                title: 'Verification Successful!',
-                description: 'Redirecting you to the sign-up page...',
-            });
-            sessionStorage.setItem('isVerified', 'true');
-            setTimeout(() => router.push('/signup'), 2000);
-        } else {
-            addMessage('assistant', 'The secret code is incorrect. Please try again.');
-        }
+    if (step === 'email') {
+      const email = input.trim().toLowerCase();
+      if (allowedUsers[email]) {
+        setCurrentUserEmail(email);
+        setStep('code');
+        setInput('');
+      } else {
+        setErrorMessage('This email is not authorized.');
+        setStep('denied');
+        setTimeout(() => {
+            setInput('')
+            setStep('email');
+        }, 2000)
+      }
+    } else if (step === 'code' && currentUserEmail) {
+      if (input.trim() === allowedUsers[currentUserEmail]) {
+        setStep('success');
+        sessionStorage.setItem('isVerified', 'true');
+        toast({
+          title: 'Verification Successful!',
+          description: 'Redirecting to sign-up...',
+        });
+        setTimeout(() => router.push('/signup'), 1500);
+      } else {
+        setErrorMessage('Invalid secret code. Please try again.');
+        setInput('');
+      }
     }
 
     setIsLoading(false);
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number = 0) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.2,
+        duration: 0.5,
+        ease: 'easeOut',
+      },
+    }),
+  };
+
   return (
-    <Card className="w-full max-w-lg border-border/50 bg-card/50 backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle className="text-2xl font-headline tracking-tight">Account Verification</CardTitle>
-        <CardDescription>Please verify your access with Sasha AI to proceed.</CardDescription>
+    <Card className="w-full max-w-md border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
+      <CardHeader className="text-center">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, duration: 0.4 }}>
+            <Bot className="mx-auto h-12 w-12 text-primary" />
+        </motion.div>
+        <CardTitle className="text-2xl font-headline tracking-tight">Sasha AI Verification</CardTitle>
+        <CardDescription>Please verify your access to proceed.</CardDescription>
       </CardHeader>
-      <CardContent className="h-[30rem] flex flex-col">
-        <ScrollArea className="h-full flex-1" ref={scrollAreaRef}>
-          <div className="p-4 space-y-4">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={cn('flex items-start gap-3', message.role === 'user' ? 'justify-end' : 'justify-start')}
+      <CardContent className="h-40">
+        <form onSubmit={handleSubmit} className="h-full">
+          <AnimatePresence mode="wait">
+            {step === 'start' && (
+              <motion.div
+                key="start"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+                className="text-center text-muted-foreground"
               >
-                 {message.role === 'assistant' && (
-                  <Avatar className="h-8 w-8 border-2 border-primary/50">
-                    <AvatarFallback className="bg-primary/20 text-primary">
-                        <LogoIcon className="h-5 w-5" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <div
-                  className={cn(
-                    'rounded-lg px-3 py-2 max-w-[80%] whitespace-pre-wrap shadow-sm',
-                    message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-                  )}
-                >
-                  <p className="text-sm">{message.content}</p>
-                </div>
-                 {message.role === 'user' && (
-                  <Avatar className="h-8 w-8 border border-border">
-                    <AvatarFallback>You</AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
-            {isLoading && (
-               <div className='flex items-start gap-3 justify-start'>
-                  <Avatar className="h-8 w-8 border-2 border-primary/50">
-                     <AvatarFallback className="bg-primary/20 text-primary">
-                        <LogoIcon className="h-5 w-5" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className='rounded-lg px-3 py-2 max-w-[80%] bg-secondary flex items-center shadow-sm'>
-                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-              </div>
+                <p>Initializing secure connection...</p>
+              </motion.div>
             )}
-          </div>
-        </ScrollArea>
-      </CardContent>
-      <CardFooter className="border-t p-4">
-        <form onSubmit={handleSubmit} className="w-full">
-            <div className='relative flex items-center'>
-                <Textarea
+            
+            {(step === 'email' || step === 'denied') && (
+              <motion.div key="email" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.4 }} className="space-y-4">
+                <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">Enter your email address</label>
+                <div className="relative">
+                  <Input
+                    ref={inputRef}
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
                     value={input}
                     onChange={handleInputChange}
-                    placeholder="Type your message..."
-                    disabled={isLoading || isAccessDenied}
-                    rows={1}
-                    className='min-h-0 resize-none pr-12'
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSubmit(e as any);
-                        }
-                    }}
-                />
-                <Button type="submit" size="icon" className='absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full' disabled={isLoading || !input.trim() || isAccessDenied}>
-                    <Send className="h-4 w-4" />
-                </Button>
-            </div>
+                    disabled={isLoading || step === 'denied'}
+                    className={cn("pr-10", errorMessage && 'border-destructive')}
+                  />
+                   <Button type="submit" size="icon" className='absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full' disabled={isLoading || !input.trim()}>
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                  </Button>
+                </div>
+                {step === 'denied' && errorMessage && <p className="text-sm text-destructive text-center">{errorMessage}</p>}
+              </motion.div>
+            )}
+
+            {step === 'code' && (
+              <motion.div key="code" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.4 }} className="space-y-4">
+                 <label htmlFor="code" className="block text-sm font-medium text-muted-foreground">Enter your secret code</label>
+                 <div className="relative">
+                    <KeyRound className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        ref={inputRef}
+                        id="code"
+                        type="password"
+                        placeholder="••••"
+                        value={input}
+                        onChange={handleInputChange}
+                        disabled={isLoading}
+                        className={cn("pl-8 pr-10", errorMessage && 'border-destructive')}
+                    />
+                    <Button type="submit" size="icon" className='absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full' disabled={isLoading || !input.trim()}>
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                    </Button>
+                 </div>
+                 {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
+              </motion.div>
+            )}
+
+            {step === 'success' && (
+                 <motion.div key="success" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} className="flex flex-col items-center justify-center h-full gap-2 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <p className='text-muted-foreground'>Verification complete. Redirecting...</p>
+                 </motion.div>
+            )}
+          </AnimatePresence>
         </form>
-      </CardFooter>
+      </CardContent>
     </Card>
   );
 }
