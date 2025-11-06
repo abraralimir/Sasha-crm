@@ -52,5 +52,6 @@ export type FinancialEntry = {
     type: 'Income' | 'Expense' | 'Investment';
     category: string;
     date: Timestamp;
+    currency: 'USD' | 'AED' | 'INR';
     notes?: string;
 };

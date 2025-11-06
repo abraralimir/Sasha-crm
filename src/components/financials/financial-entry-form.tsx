@@ -22,6 +22,7 @@ const formSchema = z.object({
   description: z.string().min(2, 'Description is required.'),
   amount: z.coerce.number().positive('Amount must be a positive number.'),
   type: z.enum(['Income', 'Expense', 'Investment']),
+  currency: z.enum(['USD', 'AED', 'INR']),
   category: z.string().min(2, 'Category is required.'),
   date: z.date({ required_error: 'A date is required.'}),
   notes: z.string().optional(),
@@ -42,6 +43,7 @@ export function FinancialEntryForm({ entry, onFinished }: FinancialEntryFormProp
       description: entry?.description || '',
       amount: entry?.amount || undefined,
       type: entry?.type || 'Expense',
+      currency: entry?.currency || 'USD',
       category: entry?.category || '',
       date: entry?.date ? entry.date.toDate() : new Date(),
       notes: entry?.notes || '',
@@ -106,12 +108,32 @@ export function FinancialEntryForm({ entry, onFinished }: FinancialEntryFormProp
             name="amount"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Amount ($)</FormLabel>
+                <FormLabel>Amount</FormLabel>
                 <FormControl><Input type="number" placeholder="100.00" {...field} /></FormControl>
                 <FormMessage />
                 </FormItem>
             )}
             />
+            <FormField
+            control={form.control}
+            name="currency"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Currency</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="AED">AED</SelectItem>
+                    <SelectItem value="INR">INR</SelectItem>
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
             control={form.control}
             name="type"
@@ -130,8 +152,6 @@ export function FinancialEntryForm({ entry, onFinished }: FinancialEntryFormProp
                 </FormItem>
             )}
             />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
             control={form.control}
             name="category"
@@ -143,7 +163,8 @@ export function FinancialEntryForm({ entry, onFinished }: FinancialEntryFormProp
                 </FormItem>
             )}
             />
-            <FormField
+        </div>
+         <FormField
             control={form.control}
             name="date"
             render={({ field }) => (
@@ -184,7 +205,6 @@ export function FinancialEntryForm({ entry, onFinished }: FinancialEntryFormProp
                 </FormItem>
             )}
             />
-        </div>
         <FormField
           control={form.control}
           name="notes"

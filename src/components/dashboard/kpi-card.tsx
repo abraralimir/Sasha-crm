@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 type KpiCardProps = {
     title: string;
-    value: string;
+    value: string | React.ReactNode;
     change?: string;
     changeType?: 'increase' | 'decrease';
     description?: string;

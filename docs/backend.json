@@ -131,9 +131,14 @@
             "type": { "type": "string", "enum": ["Income", "Expense", "Investment"] },
             "category": { "type": "string" },
             "date": { "type": "object" },
+            "currency": {
+              "type": "string",
+              "enum": ["USD", "AED", "INR"],
+              "description": "The currency of the financial entry."
+            },
             "notes": { "type": "string" }
         },
-        "required": ["description", "amount", "type", "category", "date"]
+        "required": ["description", "amount", "type", "category", "date", "currency"]
     }
   },
   "auth": {

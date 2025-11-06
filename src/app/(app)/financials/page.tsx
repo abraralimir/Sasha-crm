@@ -5,7 +5,7 @@ import { collection, doc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import type { FinancialEntry } from '@/lib/types';
 import { KpiCard } from '@/components/dashboard/kpi-card';
-import { Loader2, PlusCircle, Trash2, Edit, BrainCircuit, AlertTriangle, TrendingUp, TrendingDown, DollarSign, PiggyBank } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Edit, BrainCircuit, AlertTriangle, TrendingUp, TrendingDown, DollarSign, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -24,6 +24,7 @@ import { FinancialEntryForm } from '@/components/financials/financial-entry-form
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeFinancials, AnalyzeFinancialsOutput } from '@/ai/flows/analyze-financials';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type FinancialEntryWithId = FinancialEntry & { id: string; };
 
@@ -49,6 +50,7 @@ export default function FinancialsPage() {
     if (!financials) {
       return { totalRevenue: 0, totalExpenses: 0, netProfit: 0 };
     }
+    // Note: This is a simple sum and does not account for currency conversion.
     const totalRevenue = financials.filter(f => f.type === 'Income').reduce((acc, curr) => acc + curr.amount, 0);
     const totalExpenses = financials.filter(f => f.type === 'Expense').reduce((acc, curr) => acc + curr.amount, 0);
     const netProfit = totalRevenue - totalExpenses;
@@ -105,8 +107,26 @@ export default function FinancialsPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    // This is a simple formatter, doesn't use currency symbol from entry
+    return new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
   };
+
+  const renderKpiValue = (amount: number) => (
+    <div className="flex items-center gap-1">
+      {formatCurrency(amount)}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <Info className="h-4 w-4 text-muted-foreground" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">Aggregated total across all currencies.</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
+
 
   return (
     <div className="space-y-8">
@@ -128,9 +148,9 @@ export default function FinancialsPage() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <KpiCard title="Total Revenue" value={formatCurrency(financialSummary.totalRevenue)} icon={<TrendingUp className="text-green-500" />} />
-        <KpiCard title="Total Expenses" value={formatCurrency(financialSummary.totalExpenses)} icon={<TrendingDown className="text-red-500" />} />
-        <KpiCard title="Net Profit/Loss" value={formatCurrency(financialSummary.netProfit)} icon={<DollarSign className={financialSummary.netProfit >= 0 ? "text-primary" : "text-destructive"} />} />
+        <KpiCard title="Total Revenue" value={renderKpiValue(financialSummary.totalRevenue)} icon={<TrendingUp className="text-green-500" />} />
+        <KpiCard title="Total Expenses" value={renderKpiValue(financialSummary.totalExpenses)} icon={<TrendingDown className="text-red-500" />} />
+        <KpiCard title="Net Profit/Loss" value={renderKpiValue(financialSummary.netProfit)} icon={<DollarSign className={financialSummary.netProfit >= 0 ? "text-primary" : "text-destructive"} />} />
       </div>
 
       {isAiLoading && (
@@ -194,7 +214,7 @@ export default function FinancialsPage() {
                         <TableCell>{entry.category}</TableCell>
                         <TableCell>{format(entry.date.toDate(), 'PPP')}</TableCell>
                         <TableCell className={`text-right font-mono ${entry.type === 'Income' ? 'text-green-500' : 'text-red-500'}`}>
-                          {entry.type === 'Income' ? '+' : '-'}{formatCurrency(entry.amount)}
+                          {entry.type === 'Income' ? '+' : '-'}{entry.currency} {formatCurrency(entry.amount)}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="icon" onClick={() => handleOpenForm(entry)}><Edit className="h-4 w-4" /></Button>
