@@ -2,13 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, ArrowRight, Bot, KeyRound } from 'lucide-react';
+import { Loader2, ArrowRight, Bot, KeyRound, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 type VerificationStep = 'start' | 'email' | 'code' | 'denied' | 'success';
 
@@ -30,7 +31,6 @@ export default function VerifyPage() {
 
   useEffect(() => {
     sessionStorage.removeItem('isVerified');
-    // Animate to email step after initial greeting
     const timer = setTimeout(() => setStep('email'), 1500);
     return () => clearTimeout(timer);
   }, []);
@@ -53,7 +53,6 @@ export default function VerifyPage() {
     setIsLoading(true);
     setErrorMessage('');
 
-    // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 600));
 
     if (step === 'email') {
@@ -102,6 +101,7 @@ export default function VerifyPage() {
   };
 
   return (
+    <>
     <Card className="w-full max-w-md border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
       <CardHeader className="text-center">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, duration: 0.4 }}>
@@ -181,5 +181,12 @@ export default function VerifyPage() {
         </form>
       </CardContent>
     </Card>
+    <div className="mt-6 text-center">
+        <Link href="/about" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Info className="h-4 w-4"/>
+            Learn more about SashaLeads AI
+        </Link>
+    </div>
+    </>
   );
 }
