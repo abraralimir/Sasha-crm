@@ -9,6 +9,7 @@ interface TaskColumnProps {
   status: 'To Do' | 'In Progress' | 'Done';
   tasks: Task[];
   onTaskDrop: (taskId: string, newStatus: 'To Do' | 'In Progress' | 'Done') => void;
+  onTaskDelete: (taskId: string) => void;
 }
 
 const statusConfig = {
@@ -26,7 +27,7 @@ const statusConfig = {
     }
 }
 
-export function TaskColumn({ status, tasks, onTaskDrop }: TaskColumnProps) {
+export function TaskColumn({ status, tasks, onTaskDrop, onTaskDelete }: TaskColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'TASK',
     drop: (item: { id: string }) => onTaskDrop(item.id, status),
@@ -48,7 +49,7 @@ export function TaskColumn({ status, tasks, onTaskDrop }: TaskColumnProps) {
       <ScrollArea className="h-[60vh] flex-1">
         <div className="pr-2 -mr-2">
             {tasks.length > 0 ? (
-            tasks.map((task) => <TaskCard key={task.id} task={task} />)
+            tasks.map((task) => <TaskCard key={task.id} task={task} onDelete={onTaskDelete} />)
             ) : (
             <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg">
                 <p className="text-sm text-muted-foreground">Drop tasks here</p>

@@ -1,15 +1,30 @@
 
 'use client';
+import { useState } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { collection, doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import type { Task } from '@/lib/types';
 import { TaskColumn } from '@/components/tickets/task-column';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function TicketsPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
 
   const tasksCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -25,6 +40,36 @@ export default function TicketsPage() {
       await updateDoc(taskRef, { status: newStatus });
     } catch (error) {
       console.error('Failed to update task status:', error);
+    }
+  };
+
+  const openDeleteDialog = (taskId: string) => {
+    const task = tasks?.find(t => t.id === taskId);
+    if (task) {
+      setTaskToDelete(task);
+      setIsAlertOpen(true);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!firestore || !taskToDelete) return;
+    const taskRef = doc(firestore, 'tasks', taskToDelete.id);
+    try {
+      await deleteDoc(taskRef);
+      toast({
+        title: 'Ticket Deleted',
+        description: `The ticket "${taskToDelete.title}" has been successfully removed.`,
+      });
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete the ticket.',
+      });
+    } finally {
+      setIsAlertOpen(false);
+      setTaskToDelete(null);
     }
   };
 
@@ -52,11 +97,31 @@ export default function TicketsPage() {
                 status={status}
                 tasks={tasks?.filter(task => task.status === status) || []}
                 onTaskDrop={handleTaskDrop}
+                onTaskDelete={openDeleteDialog}
               />
             ))}
           </div>
         )}
       </div>
+
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="text-destructive" />
+              Are you sure you want to delete this ticket?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the ticket
+              titled: <span className="font-semibold text-foreground">"{taskToDelete?.title}"</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DndProvider>
   );
 }
