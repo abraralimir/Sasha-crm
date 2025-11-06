@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeFinancials, AnalyzeFinancialsOutput } from '@/ai/flows/analyze-financials';
 import { getExchangeRates, ExchangeRates } from '@/lib/currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type FinancialEntryWithId = FinancialEntry & { id: string; };
 
