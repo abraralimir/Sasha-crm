@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { collection, doc, deleteDoc, Timestamp } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { FinancialEntry } from '@/lib/types';
 import { KpiCard } from '@/components/dashboard/kpi-card';
-import { Loader2, PlusCircle, Trash2, Edit, BrainCircuit, AlertTriangle, TrendingUp, TrendingDown, DollarSign, Info } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Edit, BrainCircuit, AlertTriangle, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +24,7 @@ import { FinancialEntryForm } from '@/components/financials/financial-entry-form
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeFinancials, AnalyzeFinancialsOutput } from '@/ai/flows/analyze-financials';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getExchangeRates, ExchangeRates } from '@/lib/currency';
 
 type FinancialEntryWithId = FinancialEntry & { id: string; };
 
@@ -38,6 +38,24 @@ export default function FinancialsPage() {
   const [entryToDelete, setEntryToDelete] = useState<FinancialEntryWithId | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AnalyzeFinancialsOutput | null>(null);
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
+
+  useEffect(() => {
+    async function fetchRates() {
+      try {
+        const rates = await getExchangeRates('USD');
+        setExchangeRates(rates);
+      } catch (error) {
+        console.error("Failed to fetch exchange rates:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not load currency exchange rates. Totals may be inaccurate.",
+        });
+      }
+    }
+    fetchRates();
+  }, [toast]);
 
   const financialsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -47,15 +65,28 @@ export default function FinancialsPage() {
   const { data: financials, isLoading } = useCollection<FinancialEntryWithId>(financialsCollection);
 
   const financialSummary = useMemo(() => {
-    if (!financials) {
+    if (!financials || !exchangeRates) {
       return { totalRevenue: 0, totalExpenses: 0, netProfit: 0 };
     }
-    // Note: This is a simple sum and does not account for currency conversion.
-    const totalRevenue = financials.filter(f => f.type === 'Income').reduce((acc, curr) => acc + curr.amount, 0);
-    const totalExpenses = financials.filter(f => f.type === 'Expense').reduce((acc, curr) => acc + curr.amount, 0);
+    
+    const convertToUsd = (amount: number, currency: 'USD' | 'AED' | 'INR') => {
+      if (currency === 'USD') return amount;
+      // frankfurter.app provides rates to convert from base (USD) to target.
+      // So to convert a target currency TO USD, we divide.
+      return amount / (exchangeRates[currency] || 1);
+    };
+
+    const totalRevenue = financials
+      .filter(f => f.type === 'Income')
+      .reduce((acc, curr) => acc + convertToUsd(curr.amount, curr.currency), 0);
+      
+    const totalExpenses = financials
+      .filter(f => f.type === 'Expense')
+      .reduce((acc, curr) => acc + convertToUsd(curr.amount, curr.currency), 0);
+
     const netProfit = totalRevenue - totalExpenses;
     return { totalRevenue, totalExpenses, netProfit };
-  }, [financials]);
+  }, [financials, exchangeRates]);
 
   const handleOpenForm = (entry?: FinancialEntryWithId) => {
     setEntryToEdit(entry || null);
@@ -106,26 +137,14 @@ export default function FinancialsPage() {
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    // This is a simple formatter, doesn't use currency symbol from entry
-    return new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+  const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
   };
-
-  const renderKpiValue = (amount: number) => (
-    <div className="flex items-center gap-1">
-      {formatCurrency(amount)}
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <Info className="h-4 w-4 text-muted-foreground" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="text-xs">Aggregated total across all currencies.</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
-  );
+  
+  const renderKpiValue = (amount: number) => {
+    if (isLoading || !exchangeRates) return <Skeleton className="h-8 w-32" />;
+    return formatCurrency(amount, 'USD');
+  }
 
 
   return (
@@ -148,9 +167,9 @@ export default function FinancialsPage() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <KpiCard title="Total Revenue" value={renderKpiValue(financialSummary.totalRevenue)} icon={<TrendingUp className="text-green-500" />} />
-        <KpiCard title="Total Expenses" value={renderKpiValue(financialSummary.totalExpenses)} icon={<TrendingDown className="text-red-500" />} />
-        <KpiCard title="Net Profit/Loss" value={renderKpiValue(financialSummary.netProfit)} icon={<DollarSign className={financialSummary.netProfit >= 0 ? "text-primary" : "text-destructive"} />} />
+        <KpiCard title="Total Revenue (USD)" value={renderKpiValue(financialSummary.totalRevenue)} icon={<TrendingUp className="text-green-500" />} />
+        <KpiCard title="Total Expenses (USD)" value={renderKpiValue(financialSummary.totalExpenses)} icon={<TrendingDown className="text-red-500" />} />
+        <KpiCard title="Net Profit/Loss (USD)" value={renderKpiValue(financialSummary.netProfit)} icon={<DollarSign className={financialSummary.netProfit >= 0 ? "text-primary" : "text-destructive"} />} />
       </div>
 
       {isAiLoading && (
@@ -214,7 +233,7 @@ export default function FinancialsPage() {
                         <TableCell>{entry.category}</TableCell>
                         <TableCell>{format(entry.date.toDate(), 'PPP')}</TableCell>
                         <TableCell className={`text-right font-mono ${entry.type === 'Income' ? 'text-green-500' : 'text-red-500'}`}>
-                          {entry.type === 'Income' ? '+' : '-'}{entry.currency} {formatCurrency(entry.amount)}
+                          {entry.type === 'Income' ? '+' : '-'}{formatCurrency(entry.amount, entry.currency)}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="icon" onClick={() => handleOpenForm(entry)}><Edit className="h-4 w-4" /></Button>

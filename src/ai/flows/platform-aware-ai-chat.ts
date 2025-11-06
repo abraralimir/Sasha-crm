@@ -9,6 +9,8 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { getExchangeRates } from '@/lib/currency';
+import type { FinancialEntry } from '@/lib/types';
 import {z} from 'genkit';
 
 const PlatformAwareAIChatInputSchema = z.object({
@@ -32,16 +34,23 @@ export async function platformAwareAIChat(input: PlatformAwareAIChatInput): Prom
 
 const prompt = ai.definePrompt({
   name: 'platformAwareAIChatPrompt',
-  input: {schema: PlatformAwareAIChatInputSchema},
+  input: {schema: z.object({
+    userId: z.string(),
+    leadsJson: z.string(),
+    tasksJson: z.string(),
+    usersJson: z.string(),
+    financialsJson: z.string(),
+    query: z.string(),
+  })},
   output: {schema: PlatformAwareAIChatOutputSchema},
   prompt: `You are Sasha AI, an expert assistant with real-time knowledge of this CRM platform.
   Your current user's ID is {{userId}}.
-  You have been provided with the full dataset for leads, tasks, users, and financials as JSON data. Use this data as your primary source of truth to answer any questions.
+  You have been provided with the full dataset for leads, tasks, users, and financials as JSON data. All financial data has been converted to USD for consistency. Use this data as your primary source of truth to answer any questions.
 
   Leads Data: {{{leadsJson}}}
   Tasks/Tickets Data: {{{tasksJson}}}
   Users Data: {{{usersJson}}}
-  Financials Data: {{{financialsJson}}}
+  Financials Data (in USD): {{{financialsJson}}}
 
   Be helpful and provide detailed, actionable information based on the provided data.
 
@@ -50,7 +59,7 @@ const prompt = ai.definePrompt({
   - "What tasks are assigned to Jane Doe?"
   - "Summarize the ticket about the Innovate Inc. follow-up"
   - "List all registered users"
-  - "What was our biggest expense last month?"
+  - "What was our biggest expense last month in USD?"
 
   Current Date: ${new Date().toLocaleDateString()}
   Query: {{{query}}}`,
@@ -63,7 +72,24 @@ const platformAwareAIChatFlow = ai.defineFlow(
     outputSchema: PlatformAwareAIChatOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const financials: FinancialEntry[] = JSON.parse(input.financialsJson);
+    const rates = await getExchangeRates('USD');
+
+    const financialsInUsd = financials.map(entry => {
+        if (entry.currency === 'USD' || !rates[entry.currency]) {
+            return entry;
+        }
+        return {
+            ...entry,
+            amount: entry.amount / rates[entry.currency],
+            currency: 'USD',
+        };
+    });
+
+    const {output} = await prompt({
+        ...input,
+        financialsJson: JSON.stringify(financialsInUsd),
+    });
     return output!;
   }
 );

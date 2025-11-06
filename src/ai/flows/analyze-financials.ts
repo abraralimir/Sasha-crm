@@ -9,6 +9,8 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { getExchangeRates } from '@/lib/currency';
+import type { FinancialEntry } from '@/lib/types';
 import {z} from 'genkit';
 
 const AnalyzeFinancialsInputSchema = z.object({
@@ -27,11 +29,11 @@ const AnalyzeFinancialsOutputSchema = z.object({
     })
   ).describe("A list of key insights discovered from the financial data."),
   financialSummary: z.object({
-    totalRevenue: z.number().describe('Total calculated revenue.'),
-    totalExpenses: z.number().describe('Total calculated expenses.'),
-    netProfit: z.number().describe('Calculated net profit or loss (revenue - expenses).'),
+    totalRevenue: z.number().describe('Total calculated revenue in USD.'),
+    totalExpenses: z.number().describe('Total calculated expenses in USD.'),
+    netProfit: z.number().describe('Calculated net profit or loss (revenue - expenses) in USD.'),
     burnRate: z.number().optional().describe('The rate at which the company is spending its capital.'),
-  }).describe("A summary of the key financial metrics."),
+  }).describe("A summary of the key financial metrics, all converted to USD."),
   overallAssessment: z.string().describe("A brief, overall assessment of the financial health."),
 });
 export type AnalyzeFinancialsOutput = z.infer<typeof AnalyzeFinancialsOutputSchema>;
@@ -42,16 +44,16 @@ export async function analyzeFinancials(input: AnalyzeFinancialsInput): Promise<
 
 const prompt = ai.definePrompt({
   name: 'analyzeFinancialsPrompt',
-  input: {schema: AnalyzeFinancialsInputSchema},
+  input: {schema: z.object({ financialsJson: z.string() })},
   output: {schema: AnalyzeFinancialsOutputSchema},
   prompt: `You are Sasha, an expert financial analyst AI for a startup. Your task is to analyze the company's financial data and provide a clear, insightful report for the management team.
 
-  You have been provided with the full dataset for financial entries as JSON data. Use this data as your primary source of truth.
+  All financial figures in the provided data have been converted to USD for consistent analysis. Use this data as your primary source of truth.
 
-  Financials Data: {{{financialsJson}}}
+  Financials Data (in USD): {{{financialsJson}}}
 
   Based on this data, perform the following:
-  1.  Calculate the core metrics: Total Revenue (from 'Income' entries), Total Expenses (from 'Expense' entries), and Net Profit/Loss.
+  1.  Calculate the core metrics: Total Revenue (from 'Income' entries), Total Expenses (from 'Expense' entries), and Net Profit/Loss. All values are in USD.
   2.  Identify at least 2-3 key insights. These could be about spending patterns, revenue trends, or profitability. For each insight, provide a title, a clear explanation, and an actionable recommendation if applicable.
   3.  Provide a concise, high-level "Overall Assessment" of the company's financial health.
   4.  If possible, estimate the monthly burn rate based on expense data.
@@ -67,7 +69,21 @@ const analyzeFinancialsFlow = ai.defineFlow(
     outputSchema: AnalyzeFinancialsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const financials: FinancialEntry[] = JSON.parse(input.financialsJson);
+    const rates = await getExchangeRates('USD');
+
+    const financialsInUsd = financials.map(entry => {
+        if (entry.currency === 'USD' || !rates[entry.currency]) {
+            return entry;
+        }
+        return {
+            ...entry,
+            amount: entry.amount / rates[entry.currency],
+            currency: 'USD',
+        };
+    });
+
+    const {output} = await prompt({ financialsJson: JSON.stringify(financialsInUsd) });
     return output!;
   }
 );
