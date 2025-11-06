@@ -10,9 +10,11 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getLeadsTool, getTasksTool } from '../tools/firestore';
 
 const PlatformAwareAIChatInputSchema = z.object({
   query: z.string().describe('The user query for the AI chat.'),
+  userId: z.string().describe('The ID of the user making the request.'),
 });
 export type PlatformAwareAIChatInput = z.infer<typeof PlatformAwareAIChatInputSchema>;
 
@@ -29,9 +31,19 @@ const prompt = ai.definePrompt({
   name: 'platformAwareAIChatPrompt',
   input: {schema: PlatformAwareAIChatInputSchema},
   output: {schema: PlatformAwareAIChatOutputSchema},
-  prompt: `You are an AI assistant with knowledge of the entire platform and current projects.
-  Use this knowledge to answer the user's query in a helpful and informative way.
-  \n  Query: {{{query}}}`,
+  tools: [getLeadsTool, getTasksTool],
+  prompt: `You are Sasha AI, an expert assistant with real-time knowledge of this CRM platform.
+  Your current user's ID is {{userId}}.
+  Use the available tools to access live data about leads, tasks (also called tickets), and users to answer questions.
+  Be helpful and provide detailed, actionable information. If you use a tool, summarize the results in a clear and readable way.
+
+  Examples:
+  - "Show me all new leads"
+  - "What tasks are assigned to Jane Doe?"
+  - "Summarize the ticket about the Innovate Inc. follow-up"
+
+  Current Date: ${new Date().toLocaleDateString()}
+  Query: {{{query}}}`,
 });
 
 const platformAwareAIChatFlow = ai.defineFlow(

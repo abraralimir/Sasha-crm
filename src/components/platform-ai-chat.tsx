@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { ScrollArea } from './ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/firebase';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -29,6 +30,7 @@ export function PlatformAiChat() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -36,7 +38,7 @@ export function PlatformAiChat() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !user) return;
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -44,7 +46,7 @@ export function PlatformAiChat() {
     setIsLoading(true);
 
     try {
-      const chatInput: PlatformAwareAIChatInput = { query: input };
+      const chatInput: PlatformAwareAIChatInput = { query: input, userId: user.uid };
       const result = await platformAwareAIChat(chatInput);
       const assistantMessage: Message = { role: 'assistant', content: result.response };
       setMessages((prev) => [...prev, assistantMessage]);
@@ -106,7 +108,7 @@ export function PlatformAiChat() {
                         : 'bg-secondary'
                     )}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
                   {message.role === 'user' && (
                      <Avatar className="h-8 w-8">
