@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
+
 
 type VerificationStep = 'start' | 'email' | 'code' | 'denied' | 'success';
 
@@ -25,9 +27,12 @@ export default function VerifyPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const captchaRef = useRef<HCaptcha>(null);
+
 
   useEffect(() => {
     sessionStorage.removeItem('isVerified');
@@ -46,8 +51,7 @@ export default function VerifyPage() {
     if (errorMessage) setErrorMessage('');
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleVerification = async () => {
     if (!input.trim() || isLoading) return;
 
     setIsLoading(true);
@@ -83,8 +87,26 @@ export default function VerifyPage() {
         setInput('');
       }
     }
-
+    
+    setCaptchaToken(null);
+    captchaRef.current?.resetCaptcha();
     setIsLoading(false);
+  };
+
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+    
+    if(!captchaToken) {
+        toast({
+            variant: "destructive",
+            title: "CAPTCHA Required",
+            description: "Please complete the CAPTCHA to proceed.",
+        });
+        return;
+    }
+    handleVerification();
   };
 
   const containerVariants = {
@@ -110,8 +132,8 @@ export default function VerifyPage() {
         <CardTitle className="text-2xl font-headline tracking-tight">Sasha AI Verification</CardTitle>
         <CardDescription>Please verify your access to proceed.</CardDescription>
       </CardHeader>
-      <CardContent className="h-40">
-        <form onSubmit={handleSubmit} className="h-full">
+      <CardContent className="min-h-[12rem] flex flex-col justify-center">
+        <form onSubmit={handleSubmit}>
           <AnimatePresence mode="wait">
             {step === 'start' && (
               <motion.div
@@ -178,6 +200,22 @@ export default function VerifyPage() {
                  </motion.div>
             )}
           </AnimatePresence>
+            
+          {(step === 'email' || step === 'code') && (
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="flex justify-center mt-4">
+              <HCaptcha
+                ref={captchaRef}
+                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || '10000000-0000-0000-0000-000000000001'} // Default to test key
+                onVerify={setCaptchaToken}
+                onExpire={() => setCaptchaToken(null)}
+                theme="dark"
+              />
+            </motion.div>
+          )}
         </form>
       </CardContent>
     </Card>

@@ -1,14 +1,15 @@
-import type {NextConfig} from 'next';
+/** @type {import('next').NextConfig} */
 
-const withPWA = require('next-pwa')({
+import createPwa from 'next-pwa';
+
+const withPWA = createPwa({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development'
+  disable: process.env.NODE_ENV === 'development',
 });
 
-const nextConfig: NextConfig = {
-  /* config options here */
+const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -40,10 +41,13 @@ const nextConfig: NextConfig = {
         hostname: 'lh3.googleusercontent.com',
         port: '',
         pathname: '/**',
-      }
+      },
     ],
   },
-   env: {
+  serverActions: {
+    allowedOrigins: ['localhost:9002', '*.google.com'],
+  },
+  env: {
     NEXT_PUBLIC_VIDEOSDK_TOKEN: process.env.NEXT_PUBLIC_VIDEOSDK_TOKEN,
     NEXT_PUBLIC_VIDEOSDK_API_KEY: process.env.NEXT_PUBLIC_VIDEOSDK_API_KEY,
     NEXT_PUBLIC_HCAPTCHA_SITE_KEY: process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY,
