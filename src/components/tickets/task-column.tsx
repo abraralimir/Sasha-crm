@@ -1,7 +1,9 @@
+
 'use client';
 import { useDrop } from 'react-dnd';
 import type { Task } from '@/lib/types';
 import { TaskCard } from './task-card';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface TaskColumnProps {
   status: 'To Do' | 'In Progress' | 'Done';
@@ -36,22 +38,24 @@ export function TaskColumn({ status, tasks, onTaskDrop }: TaskColumnProps) {
   return (
     <div
       ref={drop}
-      className={`rounded-lg p-4 transition-colors ${isOver ? 'bg-secondary' : 'bg-muted/50'}`}
+      className={`rounded-lg p-4 transition-colors flex flex-col ${isOver ? 'bg-secondary' : 'bg-muted/50'}`}
     >
       <div className="flex items-center gap-2 mb-4">
         <div className={`h-2.5 w-2.5 rounded-full ${statusConfig[status].color}`}></div>
         <h3 className="font-semibold text-lg">{statusConfig[status].title}</h3>
         <span className="text-sm text-muted-foreground ml-2 bg-secondary h-6 w-6 flex items-center justify-center rounded-full">{tasks.length}</span>
       </div>
-      <div className="h-[60vh] overflow-y-auto pr-2 -mr-2">
-        {tasks.length > 0 ? (
-          tasks.map((task) => <TaskCard key={task.id} task={task} />)
-        ) : (
-          <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg">
-             <p className="text-sm text-muted-foreground">Drop tasks here</p>
-          </div>
-        )}
-      </div>
+      <ScrollArea className="h-[60vh] flex-1">
+        <div className="pr-2 -mr-2">
+            {tasks.length > 0 ? (
+            tasks.map((task) => <TaskCard key={task.id} task={task} />)
+            ) : (
+            <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg">
+                <p className="text-sm text-muted-foreground">Drop tasks here</p>
+            </div>
+            )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

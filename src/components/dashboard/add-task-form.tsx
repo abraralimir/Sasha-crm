@@ -10,13 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { useFirestore, useCollection, useMemoFirebase, useUser, addDocumentNonBlocking } from '@/firebase';
-import { collection, serverTimestamp, doc } from 'firebase/firestore';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { useEffect } from 'react';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { ScrollArea } from '../ui/scroll-area';
 
 const taskFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
@@ -48,6 +48,7 @@ export function AddTaskForm({ defaultTitle, onTaskCreated }: AddTaskFormProps) {
       title: defaultTitle || '',
       description: '',
       status: 'To Do',
+      assigneeId: '',
     },
   });
 
@@ -66,8 +67,6 @@ export function AddTaskForm({ defaultTitle, onTaskCreated }: AddTaskFormProps) {
         return;
     }
     
-    form.control.disabled = true;
-
     const taskPayload = {
       title: values.title,
       description: values.description,
@@ -86,7 +85,6 @@ export function AddTaskForm({ defaultTitle, onTaskCreated }: AddTaskFormProps) {
           description: `Task "${values.title}" has been assigned.`,
         });
 
-        // Create a notification for the assigned user, unless they are assigning it to themselves
         if (currentUser.uid !== selectedUser.id) {
           const notificationPayload = {
             title: 'New Task Assigned',
@@ -99,7 +97,7 @@ export function AddTaskForm({ defaultTitle, onTaskCreated }: AddTaskFormProps) {
           addDocumentNonBlocking(notificationRef, notificationPayload);
         }
 
-        form.reset();
+        form.reset({ title: '', description: '', status: 'To Do', assigneeId: '' });
         onTaskCreated?.();
       })
       .catch((error) => {
@@ -109,9 +107,6 @@ export function AddTaskForm({ defaultTitle, onTaskCreated }: AddTaskFormProps) {
           title: 'Error',
           description: 'Failed to create task.',
         });
-      })
-      .finally(() => {
-        form.control.disabled = false;
       });
   };
 
@@ -156,7 +151,7 @@ export function AddTaskForm({ defaultTitle, onTaskCreated }: AddTaskFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign To</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={usersLoading}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={usersLoading}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={usersLoading ? 'Loading users...' : 'Select a user'} />
@@ -180,7 +175,7 @@ export function AddTaskForm({ defaultTitle, onTaskCreated }: AddTaskFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />

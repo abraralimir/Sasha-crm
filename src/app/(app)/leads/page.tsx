@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { collection } from 'firebase/firestore';
@@ -36,7 +37,7 @@ export default function LeadsPage() {
     lead.contactName.toLowerCase().includes(filter.toLowerCase()) ||
     lead.companyName.toLowerCase().includes(filter.toLowerCase()) ||
     lead.email.toLowerCase().includes(filter.toLowerCase())
-  );
+  ).sort((a, b) => b.lastContacted.toMillis() - a.lastContacted.toMillis());
 
   return (
     <div className="space-y-8">
@@ -67,13 +68,13 @@ export default function LeadsPage() {
               <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="max-h-[60vh] overflow-auto">
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Contact</TableHead>
                     <TableHead>Company</TableHead>
-                    <TableHead className="hidden md:table-cell">Email</TableHead>
+                    <TableHead className="hidden sm:table-cell">Email</TableHead>
                     <TableHead className="hidden lg:table-cell">Potential Revenue</TableHead>
                     <TableHead className="hidden md:table-cell">Last Contacted</TableHead>
                     <TableHead>Status</TableHead>
@@ -85,7 +86,7 @@ export default function LeadsPage() {
                       <TableRow key={lead.id}>
                         <TableCell className="font-medium">{lead.contactName}</TableCell>
                         <TableCell>{lead.companyName}</TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground">{lead.email}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-muted-foreground">{lead.email}</TableCell>
                         <TableCell className="hidden lg:table-cell text-muted-foreground">
                             {lead.potentialRevenue ? `$${lead.potentialRevenue.toLocaleString()}`: 'N/A'}
                         </TableCell>

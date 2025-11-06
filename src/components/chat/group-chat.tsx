@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddTaskForm } from '../dashboard/add-task-form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { enableAIChatWithFileContext } from '@/ai/flows/ai-chat-with-file-context';
 import { addDocumentNonBlocking } from '@/firebase';
 
@@ -101,8 +101,6 @@ export function GroupChat() {
       await batch.commit();
     } catch (error) {
       console.error("Failed to create chat notifications:", error);
-      // Not re-throwing here as it's a non-critical background task.
-      // A more robust system might use a different error handling strategy.
     }
   };
 
@@ -152,7 +150,6 @@ export function GroupChat() {
     const file = e.target.files?.[0];
     if (file && user) {
         // Placeholder for actual file upload to Firebase Storage
-        // For now, we just send the file name as a message
         sendMessage({
             type: 'file',
             text: `File: ${file.name}`,
@@ -167,7 +164,6 @@ export function GroupChat() {
             description: `${file.name} was attached to the chat. File uploads are coming soon!`,
         });
     }
-    // Reset file input
     if(fileInputRef.current) {
         fileInputRef.current.value = "";
     }
@@ -240,7 +236,7 @@ export function GroupChat() {
                   )}
                   <div
                     className={cn(
-                      'rounded-lg px-3 py-2 max-w-[70%] whitespace-pre-wrap',
+                      'rounded-lg px-3 py-2 max-w-[70%] break-words',
                       message.userId === user?.uid ? 'bg-primary text-primary-foreground' : 'bg-secondary'
                     )}
                   >
@@ -322,14 +318,19 @@ export function GroupChat() {
       </Card>
       
       <Dialog open={openCreateTicketDialog} onOpenChange={setOpenCreateTicketDialog}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Create a New Ticket</DialogTitle>
-          </DialogHeader>
-          <AddTaskForm
-            defaultTitle={ticketMessage?.text}
-            onTaskCreated={() => setOpenCreateTicketDialog(false)}
-          />
+        <DialogContent className="max-w-lg w-full">
+            <DialogHeader>
+                <DialogTitle>Create a New Ticket</DialogTitle>
+                <DialogDescription>Convert this message into an actionable task.</DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="max-h-[70vh] p-1">
+                <div className="p-4">
+                    <AddTaskForm
+                        defaultTitle={ticketMessage?.type === 'text' ? ticketMessage.text : ticketMessage?.fileName}
+                        onTaskCreated={() => setOpenCreateTicketDialog(false)}
+                    />
+                </div>
+            </ScrollArea>
         </DialogContent>
       </Dialog>
     </>

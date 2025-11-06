@@ -39,7 +39,7 @@ export default function DashboardPage() {
       .reduce((acc, lead) => acc + (lead.potentialRevenue || 0), 0) || 0;
 
     const newLeadsCount = leads
-      ?.filter(lead => lead.lastContacted.toDate() > oneMonthAgo)
+      ?.filter(lead => lead.lastContacted?.toDate() > oneMonthAgo)
       .length || 0;
       
     const activeTasksCount = tasks
