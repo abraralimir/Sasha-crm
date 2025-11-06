@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BotMessageSquare, Home, LayoutGrid, MessageSquare, Users, Video, ClipboardList } from 'lucide-react';
+import { LayoutGrid, MessageSquare, Users, Video, ClipboardList } from 'lucide-react';
 
 import {
   Sidebar,

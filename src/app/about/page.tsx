@@ -1,7 +1,7 @@
-import { Bot, ShieldCheck, Zap, Layers, BrainCircuit, Mail, MessageSquare, Video } from 'lucide-react';
+import { ShieldCheck, Zap, Layers, BrainCircuit, Mail, MessageSquare, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Logo } from '@/components/logo';
+import { Logo, LogoIcon } from '@/components/logo';
 
 const features = [
   {
@@ -49,7 +49,7 @@ export default function AboutPage() {
       </header>
 
       <main className="container mx-auto px-4 py-16 text-center">
-        <Bot className="mx-auto h-16 w-16 text-primary mb-4" />
+        <LogoIcon className="mx-auto h-16 w-16 text-primary mb-4" />
         <h1 className="text-4xl md:text-6xl font-headline tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-primary">
           The Future of Intelligent CRM
         </h1>

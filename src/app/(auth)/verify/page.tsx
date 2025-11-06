@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, ArrowRight, Bot, KeyRound, Info, ShieldAlert } from 'lucide-react';
+import { Loader2, ArrowRight, KeyRound, Info, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { LogoIcon } from '@/components/logo';
 
 
 type VerificationStep = 'start' | 'email' | 'code' | 'denied' | 'success';
@@ -163,7 +164,7 @@ export default function VerifyPage() {
     <Card className="w-full max-w-md border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
       <CardHeader className="text-center">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, duration: 0.4 }}>
-            <Bot className="mx-auto h-12 w-12 text-primary" />
+            <LogoIcon className="mx-auto h-12 w-12 text-primary" />
         </motion.div>
         <CardTitle className="text-2xl font-headline tracking-tight">Sasha AI Verification</CardTitle>
         <CardDescription>Please verify your access to proceed.</CardDescription>
