@@ -9,10 +9,10 @@ const withPWA = require('next-pwa')({
 
 const nextConfig: NextConfig = {
   /* config options here */
-  experimental: {
+  serverActions: {
     // This is required to allow requests from the development environment's domain.
-    allowedDevOrigins: [
-      'https://6000-firebase-studio-1761723615724.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev',
+    allowedOrigins: [
+      '6000-firebase-studio-1761723615724.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev',
     ],
   },
   typescript: {
