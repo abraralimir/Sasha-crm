@@ -7,29 +7,29 @@ const features = [
   {
     icon: <BrainCircuit className="h-8 w-8 text-primary" />,
     title: 'Platform-Aware AI Assistant',
-    description: 'Converse with Sasha, an AI that has real-time, comprehensive knowledge of all your leads, tasks, and team members. Ask complex questions and get instant, data-driven answers.',
+    description: 'Converse with Sasha, an AI that has real-time, comprehensive knowledge of all your leads, tasks, and team members. Ask complex questions and get instant, data-driven answers to accelerate your decision-making.',
   },
   {
     icon: <Zap className="h-8 w-8 text-primary" />,
     title: 'Intelligent Automation',
-    description: 'Automate repetitive tasks from lead creation to task assignment. Our AI analyzes patterns to suggest actions, predict lead ROI, and assess risks, freeing your team to focus on closing deals.',
+    description: 'Automate repetitive tasks from lead creation to task assignment. Our AI analyzes patterns to predict lead ROI and assess risks, freeing your team to focus on strategic growth and closing high-value deals.',
   },
   {
     icon: <Layers className="h-8 w-8 text-primary" />,
     title: 'Seamless Collaboration',
-    description: 'A unified hub for your team. Utilize the real-time Kanban board, engage in team-wide chat, and jump into video conferences without ever leaving the platform.',
+    description: 'A unified hub designed for peak team performance. Utilize the real-time Kanban board, engage in team-wide chat for instant alignment, and jump into video conferences without ever leaving the platform.',
   },
   {
     icon: <ShieldCheck className="h-8 w-8 text-primary" />,
     title: 'Uncompromising Security',
-    description: 'Built on a foundation of enterprise-grade security. From a mandatory verification gate to robust Firebase security rules, your data is encrypted, isolated, and protected at every layer.',
+    description: 'Built on a foundation of enterprise-grade security. From a mandatory verification gate to a powerful, granular data security model, your data is encrypted, isolated, and protected at every layer.',
   },
 ];
 
 const upcomingFeatures = [
-    { title: 'Predictive Lead Scoring', description: 'AI will automatically score new leads based on their likelihood to convert, allowing your team to prioritize efforts.' },
-    { title: 'Automated Email Sequences', description: 'Nurture leads with intelligent, automated email campaigns triggered directly from the CRM.' },
-    { title: 'Deeper AI Analytics', description: 'Gain even deeper insights with advanced AI-driven reports on team performance, sales forecasting, and market trends.' },
+    { title: 'Predictive Lead Scoring', description: 'AI will automatically score new leads based on their likelihood to convert, allowing your team to prioritize efforts with precision.' },
+    { title: 'Automated Email Sequences', description: 'Nurture leads with intelligent, automated email campaigns triggered by custom events and actions directly from within the CRM.' },
+    { title: 'Deeper AI Analytics', description: 'Gain even deeper insights with advanced AI-driven reports on team performance, sales forecasting, and emerging market trends.' },
 ];
 
 export default function AboutPage() {
