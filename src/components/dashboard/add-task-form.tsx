@@ -16,6 +16,7 @@ import { Loader2 } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { useEffect } from 'react';
+import { ScrollArea } from '../ui/scroll-area';
 
 const taskFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
@@ -108,6 +109,103 @@ export function AddTaskForm({ defaultTitle, onTaskCreated }: AddTaskFormProps) {
         });
       });
   };
+  
+  const formContent = (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title</FormLabel>
+              <FormControl>
+                <Input placeholder="E.g., Follow up with Innovate Inc." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Add a short description..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="assigneeId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Assign To</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value} disabled={usersLoading}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={usersLoading ? 'Loading users...' : 'Select a user'} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {users?.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Status</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                    <SelectItem value="To Do">To Do</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Done">Done</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            'Create Ticket'
+          )}
+        </Button>
+      </form>
+    </Form>
+  );
+
+  // If onTaskCreated is provided, it's in a dialog, so don't render the Card
+  if (onTaskCreated) {
+    return (
+        <ScrollArea className="max-h-[70vh]">
+            <div className="pr-6">
+                {formContent}
+            </div>
+        </ScrollArea>
+    )
+  }
 
   return (
     <Card>
@@ -116,89 +214,7 @@ export function AddTaskForm({ defaultTitle, onTaskCreated }: AddTaskFormProps) {
         <CardDescription>Assign a new task to a team member.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="E.g., Follow up with Innovate Inc." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Add a short description..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="assigneeId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Assign To</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={usersLoading}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={usersLoading ? 'Loading users...' : 'Select a user'} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {users?.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                   <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        <SelectItem value="To Do">To Do</SelectItem>
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                        <SelectItem value="Done">Done</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Create Ticket'
-              )}
-            </Button>
-          </form>
-        </Form>
+        {formContent}
       </CardContent>
     </Card>
   );

@@ -9,8 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { useFirestore } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -22,7 +22,11 @@ const leadFormSchema = z.object({
   potentialRevenue: z.coerce.number().positive('Must be a positive number.').optional(),
 });
 
-export function AddLeadForm() {
+type AddLeadFormProps = {
+  onLeadCreated?: () => void;
+};
+
+export function AddLeadForm({ onLeadCreated }: AddLeadFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -39,27 +43,123 @@ export function AddLeadForm() {
   const onSubmit = async (values: z.infer<typeof leadFormSchema>) => {
     if (!firestore) return;
 
-    try {
-      const leadsCollection = collection(firestore, 'leads');
-      await addDoc(leadsCollection, {
-        ...values,
-        lastContacted: serverTimestamp(),
+    const leadsCollection = collection(firestore, 'leads');
+    addDocumentNonBlocking(leadsCollection, {
+      ...values,
+      lastContacted: serverTimestamp(),
+    })
+      .then(() => {
+        toast({
+          title: 'Lead Generated',
+          description: `Lead for ${values.contactName} has been added.`,
+        });
+        form.reset();
+        onLeadCreated?.();
+      })
+      .catch((error) => {
+        console.error('Error creating lead:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to generate lead.',
+        });
       });
-
-      toast({
-        title: 'Lead Generated',
-        description: `Lead for ${values.contactName} has been added.`,
-      });
-      form.reset();
-    } catch (error) {
-      console.error('Error creating lead:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to generate lead.',
-      });
-    }
   };
+
+  const formContent = (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="contactName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contact Name</FormLabel>
+              <FormControl>
+                <Input placeholder="John Doe" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="companyName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Innovate Inc." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input placeholder="john.doe@innovate.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="potentialRevenue"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Potential Revenue ($)</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="5000" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Status</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Proposal">Proposal</SelectItem>
+                  <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="Lost">Lost</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            'Generate Lead'
+          )}
+        </Button>
+      </form>
+    </Form>
+  );
+
+  // If onLeadCreated is provided, it's in a dialog, so don't render the Card
+  if (onLeadCreated) {
+    return formContent;
+  }
 
   return (
     <Card>
@@ -68,93 +168,7 @@ export function AddLeadForm() {
         <CardDescription>Enter details to create a new lead.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="contactName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contact Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Innovate Inc." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="john.doe@innovate.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="potentialRevenue"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Potential Revenue ($)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="5000" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="New">New</SelectItem>
-                      <SelectItem value="Contacted">Contacted</SelectItem>
-                      <SelectItem value="Proposal">Proposal</SelectItem>
-                      <SelectItem value="Closed">Closed</SelectItem>
-                      <SelectItem value="Lost">Lost</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Generate Lead'
-              )}
-            </Button>
-          </form>
-        </Form>
+        {formContent}
       </CardContent>
     </Card>
   );

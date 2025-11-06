@@ -1,30 +1,30 @@
 
 'use client';
 import { useState } from 'react';
-import { collection } from 'firebase/firestore';
+import { collection, doc, updateDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AddLeadForm } from '@/components/dashboard/add-lead-form';
 import type { Lead } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 type LeadWithId = Lead & { id: string; lastContacted: Timestamp };
 
-const statusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' } = {
-  New: 'default',
-  Contacted: 'secondary',
-  Proposal: 'secondary',
-  Closed: 'default',
-  Lost: 'destructive',
-};
+const leadStatuses: Lead['status'][] = ["New", "Contacted", "Proposal", "Closed", "Lost"];
 
 export default function LeadsPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [filter, setFilter] = useState('');
+  const [isCreateLeadOpen, setCreateLeadOpen] = useState(false);
 
   const leadsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -32,6 +32,25 @@ export default function LeadsPage() {
   }, [firestore]);
 
   const { data: leads, isLoading } = useCollection<LeadWithId>(leadsCollection);
+
+  const handleStatusChange = async (leadId: string, newStatus: Lead['status']) => {
+    if (!firestore) return;
+    const leadRef = doc(firestore, 'leads', leadId);
+    try {
+      await updateDoc(leadRef, { status: newStatus });
+      toast({
+        title: 'Status Updated',
+        description: `Lead status changed to ${newStatus}.`,
+      });
+    } catch (error) {
+      console.error('Failed to update lead status:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update lead status.',
+      });
+    }
+  };
 
   const filteredLeads = leads?.filter(lead =>
     lead.contactName.toLowerCase().includes(filter.toLowerCase()) ||
@@ -41,18 +60,37 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Generated Leads</h1>
-        <p className="text-muted-foreground">
-          A real-time list of all potential customers and deals.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Generated Leads</h1>
+          <p className="text-muted-foreground">
+            A real-time list of all potential customers and deals.
+          </p>
+        </div>
+        <Dialog open={isCreateLeadOpen} onOpenChange={setCreateLeadOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Generate Lead
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Generate a New Lead</DialogTitle>
+              <DialogDescription>
+                Enter the details below to create a new lead in the system.
+              </DialogDescription>
+            </DialogHeader>
+            <AddLeadForm onLeadCreated={() => setCreateLeadOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Leads</CardTitle>
           <CardDescription>
-            Browse and search through all available leads.
+            Browse, search, and manage all available leads.
           </CardDescription>
            <div className="pt-4">
               <Input
@@ -94,9 +132,18 @@ export default function LeadsPage() {
                             {lead.lastContacted ? format(lead.lastContacted.toDate(), 'PPP') : 'N/A'}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={statusVariant[lead.status] || 'default'}>
-                            {lead.status}
-                          </Badge>
+                          <Select value={lead.status} onValueChange={(newStatus: Lead['status']) => handleStatusChange(lead.id, newStatus)}>
+                            <SelectTrigger className="w-[120px] h-8 text-xs">
+                                <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {leadStatuses.map(status => (
+                                    <SelectItem key={status} value={status}>
+                                        {status}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                       </TableRow>
                     ))

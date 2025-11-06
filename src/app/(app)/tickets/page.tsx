@@ -5,9 +5,10 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2, Trash2, AlertTriangle, PlusCircle } from 'lucide-react';
 import type { Task } from '@/lib/types';
 import { TaskColumn } from '@/components/tickets/task-column';
+import { AddTaskForm } from '@/components/dashboard/add-task-form';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +19,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
 export default function TicketsPage() {
@@ -25,6 +35,7 @@ export default function TicketsPage() {
   const { toast } = useToast();
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [isCreateTicketOpen, setCreateTicketOpen] = useState(false);
 
   const tasksCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -78,11 +89,28 @@ export default function TicketsPage() {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold">Tickets</h1>
-          <p className="text-muted-foreground">
-            A real-time Kanban board of all assigned tasks.
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Tickets</h1>
+            <p className="text-muted-foreground">
+              A real-time Kanban board of all assigned tasks.
+            </p>
+          </div>
+          <Dialog open={isCreateTicketOpen} onOpenChange={setCreateTicketOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create Ticket
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create a New Ticket</DialogTitle>
+                <DialogDescription>Assign a new task to a team member.</DialogDescription>
+              </DialogHeader>
+              <AddTaskForm onTaskCreated={() => setCreateTicketOpen(false)} />
+            </DialogContent>
+          </Dialog>
         </div>
 
         {isLoading ? (
