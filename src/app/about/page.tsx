@@ -1,4 +1,4 @@
-import { Bot, ShieldCheck, Zap, Layers, BrainCircuit, Mail } from 'lucide-react';
+import { Bot, ShieldCheck, Zap, Layers, BrainCircuit, Mail, MessageSquare, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
@@ -7,7 +7,7 @@ const features = [
   {
     icon: <BrainCircuit className="h-8 w-8 text-primary" />,
     title: 'Platform-Aware AI Assistant',
-    description: 'Converse with Sasha, an AI that has real-time, comprehensive knowledge of all your leads, tasks, and team members. Ask complex questions and get instant, data-driven answers to accelerate your decision-making.',
+    description: "Engage with Sasha, an AI that has a deep, real-time understanding of your entire CRM. Ask complex questions like 'What are my team's highest-value leads?' or 'Summarize our progress with Innovate Inc.' and get instant, data-driven answers to accelerate decision-making.",
   },
   {
     icon: <Zap className="h-8 w-8 text-primary" />,
@@ -15,9 +15,14 @@ const features = [
     description: 'Automate repetitive tasks from lead creation to task assignment. Our AI analyzes patterns to predict lead ROI and assess risks, freeing your team to focus on strategic growth and closing high-value deals.',
   },
   {
-    icon: <Layers className="h-8 w-8 text-primary" />,
-    title: 'Seamless Collaboration',
-    description: 'A unified hub designed for peak team performance. Utilize the real-time Kanban board, engage in team-wide chat for instant alignment, and jump into video conferences without ever leaving the platform.',
+    icon: <MessageSquare className="h-8 w-8 text-primary" />,
+    title: 'Instant Team Sync',
+    description: 'A centralized hub for real-time communication. The integrated group chat ensures your entire team is aligned, allowing for instant feedback, file sharing, and quick decisions without ever switching context.',
+  },
+  {
+    icon: <Video className="h-8 w-8 text-primary" />,
+    title: 'Integrated HD Conferencing',
+    description: 'Seamlessly transition from chat to a face-to-face video conference. Conduct strategy sessions, client calls, or daily stand-ups with high-definition video directly within the platform, keeping all communication in one place.',
   },
   {
     icon: <ShieldCheck className="h-8 w-8 text-primary" />,
@@ -55,7 +60,7 @@ export default function AboutPage() {
 
       <section className="container mx-auto px-4 py-20">
         <h2 className="text-3xl md:text-4xl font-headline text-center mb-12">Core Pillars of SashaLeads AI</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature) => (
             <Card key={feature.title} className="bg-card/50 backdrop-blur-sm border-border/50 text-center">
               <CardHeader>
