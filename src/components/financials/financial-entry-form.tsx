@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as z from 'zod';
@@ -7,8 +8,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { useFirestore, addDocumentNonBlocking } from '@/firebase';
-import { collection, doc, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, doc, serverTimestamp, setDoc, Timestamp, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
@@ -29,7 +30,7 @@ const formSchema = z.object({
 });
 
 type FinancialEntryFormProps = {
-  entry?: FinancialEntry | null;
+  entry?: (FinancialEntry & { id: string }) | null;
   onFinished?: () => void;
 };
 
@@ -41,7 +42,7 @@ export function FinancialEntryForm({ entry, onFinished }: FinancialEntryFormProp
     resolver: zodResolver(formSchema),
     defaultValues: {
       description: entry?.description || '',
-      amount: entry?.amount || undefined,
+      amount: entry?.amount || ('' as any),
       type: entry?.type || 'Expense',
       currency: entry?.currency || 'USD',
       category: entry?.category || '',
@@ -76,7 +77,15 @@ export function FinancialEntryForm({ entry, onFinished }: FinancialEntryFormProp
           description: `The entry "${values.description}" has been created.`,
         });
       }
-      form.reset();
+      form.reset({
+        description: '',
+        amount: '' as any,
+        type: 'Expense',
+        currency: 'USD',
+        category: '',
+        date: new Date(),
+        notes: '',
+      });
       onFinished?.();
     } catch (error) {
       console.error('Error saving financial entry:', error);
