@@ -1,4 +1,4 @@
-import { ShieldCheck, Zap, Layers, BrainCircuit, Mail, MessageSquare, Video } from 'lucide-react';
+import { ShieldCheck, Zap, Layers, BrainCircuit, Mail, MessageSquare, Video, CircleDollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo, LogoIcon } from '@/components/logo';
@@ -7,17 +7,22 @@ const features = [
   {
     icon: <BrainCircuit className="h-8 w-8 text-primary" />,
     title: 'Platform-Aware AI Assistant',
-    description: "Engage with Sasha, an AI that has a deep, real-time understanding of your entire CRM. Ask complex questions like 'What are my team's highest-value leads?' or 'Summarize our progress with Innovate Inc.' and get instant, data-driven answers to accelerate decision-making.",
+    description: "Engage with Sasha, an AI that has a deep, real-time understanding of your entire CRM. Ask complex questions about leads, tasks, and financials and get instant, data-driven answers to accelerate decision-making.",
+  },
+  {
+    icon: <MessageSquare className="h-8 w-8 text-primary" />,
+    title: 'Advanced Collaboration Hub',
+    description: 'A centralized hub for real-time communication. Share files, convert conversations directly into actionable tickets, and use AI to draft messages, ensuring your team is aligned and efficient.',
+  },
+  {
+    icon: <CircleDollarSign className="h-8 w-8 text-primary" />,
+    title: 'Agentic Financials',
+    description: "Track income, expenses, and investments with multi-currency support. Leverage our AI agent to analyze your financial health, identify trends, and receive actionable insights—all converted to a unified currency (USD).",
   },
   {
     icon: <Zap className="h-8 w-8 text-primary" />,
     title: 'Intelligent Automation',
     description: 'Automate repetitive tasks from lead creation to task assignment. Our AI analyzes patterns to predict lead ROI and assess risks, freeing your team to focus on strategic growth and closing high-value deals.',
-  },
-  {
-    icon: <MessageSquare className="h-8 w-8 text-primary" />,
-    title: 'Instant Team Sync',
-    description: 'A centralized hub for real-time communication. The integrated group chat ensures your entire team is aligned, allowing for instant feedback, file sharing, and quick decisions without ever switching context.',
   },
   {
     icon: <Video className="h-8 w-8 text-primary" />,
