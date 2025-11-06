@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
+import { useEffect } from 'react';
 
 const taskFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
@@ -23,7 +24,12 @@ const taskFormSchema = z.object({
   status: z.enum(['To Do', 'In Progress', 'Done']),
 });
 
-export function AddTaskForm() {
+type AddTaskFormProps = {
+  defaultTitle?: string;
+  onTaskCreated?: () => void;
+}
+
+export function AddTaskForm({ defaultTitle, onTaskCreated }: AddTaskFormProps) {
   const { user: currentUser } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -38,11 +44,17 @@ export function AddTaskForm() {
   const form = useForm<z.infer<typeof taskFormSchema>>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-      title: '',
+      title: defaultTitle || '',
       description: '',
       status: 'To Do',
     },
   });
+
+  useEffect(() => {
+    if (defaultTitle) {
+      form.setValue('title', defaultTitle);
+    }
+  }, [defaultTitle, form]);
 
   const onSubmit = async (values: z.infer<typeof taskFormSchema>) => {
     if (!firestore || !currentUser) return;
@@ -83,6 +95,7 @@ export function AddTaskForm() {
       }
 
       form.reset();
+      onTaskCreated?.();
     } catch (error) {
       console.error('Error creating task:', error);
       toast({
