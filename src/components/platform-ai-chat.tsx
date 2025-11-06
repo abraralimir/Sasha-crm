@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, Loader2, Send, User, X } from 'lucide-react';
+import { Bot, Loader2, Send, X } from 'lucide-react';
 import { platformAwareAIChat, PlatformAwareAIChatInput } from '@/ai/flows/platform-aware-ai-chat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,11 +13,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Avatar, AvatarFallback } from './ui/avatar';
 import { ScrollArea } from './ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import type { Lead, Task, UserProfile } from '@/lib/types';
+
 
 type Message = {
   role: 'user' | 'assistant';
@@ -31,6 +34,17 @@ export function PlatformAiChat() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
+
+  // Hooks to fetch all relevant data
+  const leadsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'leads') : null, [firestore]);
+  const tasksCollection = useMemoFirebase(() => firestore ? collection(firestore, 'tasks') : null, [firestore]);
+  const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
+
+  const { data: leads, isLoading: leadsLoading } = useCollection<Lead>(leadsCollection);
+  const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksCollection);
+  const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersCollection);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -46,7 +60,13 @@ export function PlatformAiChat() {
     setIsLoading(true);
 
     try {
-      const chatInput: PlatformAwareAIChatInput = { query: input, userId: user.uid };
+      const chatInput: PlatformAwareAIChatInput = { 
+        query: input, 
+        userId: user.uid,
+        leadsJson: JSON.stringify(leads || []),
+        tasksJson: JSON.stringify(tasks || []),
+        usersJson: JSON.stringify(users || []),
+      };
       const result = await platformAwareAIChat(chatInput);
       const assistantMessage: Message = { role: 'assistant', content: result.response };
       setMessages((prev) => [...prev, assistantMessage]);
@@ -57,11 +77,13 @@ export function PlatformAiChat() {
         title: 'Error',
         description: 'Failed to get a response from the AI assistant.',
       });
-      setMessages((prev) => prev.slice(0, -1)); // Remove the user message if AI fails
+      // Do not remove the user's message on failure, so they can retry
     } finally {
       setIsLoading(false);
     }
   };
+  
+  const isDataLoading = leadsLoading || tasksLoading || usersLoading;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -76,6 +98,7 @@ export function PlatformAiChat() {
           <SheetTitle>Platform Assistant</SheetTitle>
           <SheetDescription>
             Ask Sasha AI anything about your leads, projects, and platform data.
+            {isDataLoading && <span className='text-xs text-muted-foreground block animate-pulse'>Loading platform data...</span>}
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-hidden">
@@ -102,13 +125,13 @@ export function PlatformAiChat() {
                   )}
                   <div
                     className={cn(
-                      'rounded-lg px-3 py-2 max-w-[80%]',
+                      'rounded-lg px-3 py-2 max-w-[80%] whitespace-pre-wrap',
                       message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-secondary'
                     )}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-sm">{message.content}</p>
                   </div>
                   {message.role === 'user' && (
                      <Avatar className="h-8 w-8">
@@ -135,10 +158,10 @@ export function PlatformAiChat() {
             <Input
               value={input}
               onChange={handleInputChange}
-              placeholder="e.g., 'Summarize the Innovate Inc. lead.'"
-              disabled={isLoading}
+              placeholder={isDataLoading ? "Sasha is synching..." : "e.g., 'How many new leads?'"}
+              disabled={isLoading || isDataLoading}
             />
-            <Button type="submit" disabled={isLoading || !input.trim()}>
+            <Button type="submit" disabled={isLoading || !input.trim() || isDataLoading}>
               <Send className="h-4 w-4" />
             </Button>
           </form>

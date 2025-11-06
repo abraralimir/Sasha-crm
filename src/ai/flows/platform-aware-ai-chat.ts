@@ -10,11 +10,13 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getLeadsTool, getTasksTool, getUsersTool } from '../tools/firestore';
 
 const PlatformAwareAIChatInputSchema = z.object({
   query: z.string().describe('The user query for the AI chat.'),
   userId: z.string().describe('The ID of the user making the request.'),
+  leadsJson: z.string().describe('A JSON string representing all the leads in the system.'),
+  tasksJson: z.string().describe('A JSON string representing all the tasks/tickets in the system.'),
+  usersJson: z.string().describe('A JSON string representing all the users in the system.'),
 });
 export type PlatformAwareAIChatInput = z.infer<typeof PlatformAwareAIChatInputSchema>;
 
@@ -31,11 +33,15 @@ const prompt = ai.definePrompt({
   name: 'platformAwareAIChatPrompt',
   input: {schema: PlatformAwareAIChatInputSchema},
   output: {schema: PlatformAwareAIChatOutputSchema},
-  tools: [getLeadsTool, getTasksTool, getUsersTool],
   prompt: `You are Sasha AI, an expert assistant with real-time knowledge of this CRM platform.
   Your current user's ID is {{userId}}.
-  Use the available tools to access live data about leads, tasks (also called tickets), and users to answer questions.
-  Be helpful and provide detailed, actionable information. If you use a tool, summarize the results in a clear and readable way.
+  You have been provided with the full dataset for leads, tasks, and users as JSON data. Use this data as your primary source of truth to answer any questions.
+
+  Leads Data: {{{leadsJson}}}
+  Tasks/Tickets Data: {{{tasksJson}}}
+  Users Data: {{{usersJson}}}
+
+  Be helpful and provide detailed, actionable information based on the provided data.
 
   Examples:
   - "Show me all new leads"

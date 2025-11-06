@@ -7,4 +7,3 @@ import '@/ai/flows/generate-project-timeline.ts';
 import '@/ai/flows/platform-aware-ai-chat.ts';
 import '@/ai/flows/predict-lead-roi.ts';
 import '@/ai/flows/assess-lead-risk.ts';
-import '@/ai/tools/firestore.ts';
