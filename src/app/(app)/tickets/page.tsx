@@ -90,15 +90,16 @@ export default function TicketsPage() {
             <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex overflow-x-auto gap-6 pb-4">
             {columns.map(status => (
-              <TaskColumn
-                key={status}
-                status={status}
-                tasks={tasks?.filter(task => task.status === status) || []}
-                onTaskDrop={handleTaskDrop}
-                onTaskDelete={openDeleteDialog}
-              />
+              <div key={status} className="min-w-[300px] flex-1">
+                <TaskColumn
+                  status={status}
+                  tasks={tasks?.filter(task => task.status === status) || []}
+                  onTaskDrop={handleTaskDrop}
+                  onTaskDelete={openDeleteDialog}
+                />
+              </div>
             ))}
           </div>
         )}
