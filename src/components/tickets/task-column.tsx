@@ -1,13 +1,13 @@
 
 'use client';
 import { useDrop } from 'react-dnd';
-import type { Task } from '@/lib/types';
+import type { Task, ProjectTask } from '@/lib/types';
 import { TaskCard } from './task-card';
 import { ScrollArea } from '../ui/scroll-area';
 
 interface TaskColumnProps {
   status: 'To Do' | 'In Progress' | 'Done';
-  tasks: Task[];
+  tasks: (Task | ProjectTask)[];
   onTaskDrop: (taskId: string, newStatus: 'To Do' | 'In Progress' | 'Done') => void;
   onTaskDelete: (taskId: string) => void;
 }

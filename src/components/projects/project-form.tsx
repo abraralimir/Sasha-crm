@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { collection, serverTimestamp, Timestamp, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CalendarIcon, BrainCircuit } from 'lucide-react';
@@ -17,8 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
-import { UserProfile, GeneratedPlan } from '@/lib/types';
-import { DateRange } from 'react-day-picker';
+import { GeneratedPlan } from '@/lib/types';
 import { useState } from 'react';
 import { ScrollArea } from '../ui/scroll-area';
 import { generateProjectTimeline } from '@/ai/flows/generate-project-timeline';
@@ -41,10 +40,18 @@ type ProjectFormProps = {
   onFinished?: () => void;
 };
 
+const createSlug = (projectName: string) => {
+    return projectName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+};
+
 export function ProjectForm({ project, onFinished }: ProjectFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const { user: currentUser } = useUser();
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
 
@@ -92,9 +99,10 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
 
     const payload = {
       ...values,
+      slug: createSlug(values.projectName),
       startDate: Timestamp.fromDate(values.dates.from),
       endDate: Timestamp.fromDate(values.dates.to),
-      team: [], // Not implemented yet
+      team: [],
       aiGeneratedPlan: generatedPlan || null,
     };
     delete (payload as any).dates;

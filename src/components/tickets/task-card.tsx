@@ -11,11 +11,11 @@ import {
 } from '@/components/ui/context-menu';
 import { formatDistanceToNow } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
-import type { Task } from '@/lib/types';
+import type { Task, ProjectTask } from '@/lib/types';
 import { Trash2 } from 'lucide-react';
 
 interface TaskCardProps {
-  task: Task;
+  task: Task | ProjectTask;
   onDelete: (taskId: string) => void;
 }
 

@@ -59,6 +59,7 @@ export type FinancialEntry = {
 export type Project = {
     id: string;
     projectName: string;
+    slug: string;
     clientName: string;
     description: string;
     startDate: Timestamp;
@@ -77,8 +78,7 @@ export type ProjectTask = {
     assigneeId?: string;
     assigneeName?: string;
     assigneeAvatar?: string;
-    startDate: Timestamp;
-    endDate: Timestamp;
+    createdAt: Timestamp;
 };
 
 export type GeneratedPlan = {

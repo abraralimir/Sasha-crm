@@ -1,9 +1,10 @@
+
 'use client';
 
 import type { Project } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { Progress } from "../ui/progress";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -37,7 +38,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
     const progress = calculateProgress();
     
     return (
-        <Link href={`/projects/${project.id}`} className="block">
+        <Link href={`/projects/${project.slug}`} className="block">
             <Card className="h-full transition-all hover:shadow-lg hover:border-primary/50">
                 <CardHeader>
                     <div className="flex justify-between items-start">

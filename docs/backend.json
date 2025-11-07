@@ -119,10 +119,9 @@
         "assigneeId": { "type": "string" },
         "assigneeName": { "type": "string" },
         "assigneeAvatar": { "type": "string", "format": "uri" },
-        "startDate": { "type": "object" },
-        "endDate": { "type": "object" }
+        "createdAt": { "type": "object" }
       },
-      "required": ["title", "status", "startDate", "endDate"]
+      "required": ["title", "status", "createdAt"]
     },
     "Project": {
       "title": "Project",
@@ -130,19 +129,20 @@
       "type": "object",
       "properties": {
         "projectName": { "type": "string" },
+        "slug": { "type": "string", "description": "URL-friendly version of the project name." },
         "clientName": { "type": "string" },
         "description": { "type": "string" },
         "startDate": { "type": "object" },
         "endDate": { "type": "object" },
         "status": { "type": "string", "enum": ["Not Started", "In Progress", "Completed", "On Hold"] },
         "budget": { "type": "number" },
-        "team": { "type": "array", "items": { "type": "string" } },
+        "team": { "type": "array", "items": { "type": "string" }, "description": "Array of user IDs." },
         "aiGeneratedPlan": { 
           "type": "object",
           "description": "The AI-generated project plan."
         }
       },
-      "required": ["projectName", "clientName", "status", "startDate", "endDate"]
+      "required": ["projectName", "slug", "clientName", "status", "startDate", "endDate"]
     },
     "Notification": {
         "title": "Notification",
