@@ -1,0 +1,64 @@
+'use client';
+
+import type { Project } from "@/lib/types";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { format, formatDistanceToNow } from "date-fns";
+import { Progress } from "../ui/progress";
+
+type ProjectCardProps = {
+    project: Project;
+}
+
+const statusStyles = {
+    "Not Started": "bg-gray-500",
+    "In Progress": "bg-blue-500",
+    "Completed": "bg-green-500",
+    "On Hold": "bg-yellow-500",
+};
+
+export function ProjectCard({ project }: ProjectCardProps) {
+    
+    const calculateProgress = () => {
+        if (project.status === 'Completed') return 100;
+        if (project.status === 'Not Started') return 0;
+
+        const totalDuration = project.endDate.toDate().getTime() - project.startDate.toDate().getTime();
+        if (totalDuration <= 0) return 0;
+
+        const elapsedDuration = new Date().getTime() - project.startDate.toDate().getTime();
+        const progress = Math.min(100, Math.max(0, (elapsedDuration / totalDuration) * 100));
+        
+        return progress;
+    }
+
+    const progress = calculateProgress();
+    
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{project.projectName}</CardTitle>
+                    <Badge className={statusStyles[project.status]}>{project.status}</Badge>
+                </div>
+                <CardDescription>For: {project.clientName}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground line-clamp-3">{project.description}</p>
+                <div>
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>Progress</span>
+                        <span>{Math.round(progress)}%</span>
+                    </div>
+                    <Progress value={progress} />
+                </div>
+            </CardContent>
+            <CardFooter className="text-xs text-muted-foreground justify-between">
+                <span>{format(project.startDate.toDate(), 'MMM d, yyyy')} - {format(project.endDate.toDate(), 'MMM d, yyyy')}</span>
+                {project.budget && (
+                    <span className="font-semibold">${project.budget.toLocaleString()}</span>
+                )}
+            </CardFooter>
+        </Card>
+    );
+}

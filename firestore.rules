@@ -36,10 +36,21 @@ service cloud.firestore {
       }
     }
 
-    // Rules for 'messages', 'leads', 'tasks', and 'financials' collections
+    // Rules for 'messages', 'leads', 'tasks', 'financials' and 'projects' collections
     match /{collection}/{docId} {
-      // Allow any authenticated user to read and write to messages, leads, tasks, and financials.
-      allow read, write: if isSignedIn() && (collection == 'messages' || collection == 'leads' || collection == 'tasks' || collection == 'financials');
+      allow read, write: if isSignedIn() && (
+        collection == 'messages' || 
+        collection == 'leads' || 
+        collection == 'tasks' || 
+        collection == 'financials' ||
+        collection == 'projects'
+      );
+    }
+    
+    // Rules for project-specific tasks
+    match /projects/{projectId}/tasks/{taskId} {
+        // Allow any authenticated user to read and write tasks within any project.
+        allow read, write: if isSignedIn();
     }
   }
 }

@@ -95,7 +95,7 @@
     },
     "Task": {
       "title": "Task",
-      "description": "Represents a single task or ticket.",
+      "description": "Represents a single task or ticket for internal teams.",
       "type": "object",
       "properties": {
         "title": { "type": "string" },
@@ -107,6 +107,38 @@
         "createdAt": { "type": "object" }
       },
       "required": ["title", "status", "createdAt"]
+    },
+     "ProjectTask": {
+      "title": "Project Task",
+      "description": "Represents a single task within a project.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["To Do", "In Progress", "Done"] },
+        "assigneeId": { "type": "string" },
+        "assigneeName": { "type": "string" },
+        "assigneeAvatar": { "type": "string", "format": "uri" },
+        "startDate": { "type": "object" },
+        "endDate": { "type": "object" }
+      },
+      "required": ["title", "status", "startDate", "endDate"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Represents a single project.",
+      "type": "object",
+      "properties": {
+        "projectName": { "type": "string" },
+        "clientName": { "type": "string" },
+        "description": { "type": "string" },
+        "startDate": { "type": "object" },
+        "endDate": { "type": "object" },
+        "status": { "type": "string", "enum": ["Not Started", "In Progress", "Completed", "On Hold"] },
+        "budget": { "type": "number" },
+        "team": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["projectName", "clientName", "status", "startDate", "endDate"]
     },
     "Notification": {
         "title": "Notification",
@@ -162,7 +194,15 @@
     },
     "/tasks/{taskId}": {
         "schema": { "$ref": "#/entities/Task" },
-        "description": "Stores tasks. All authenticated users can manage tasks."
+        "description": "Stores general team tasks. All authenticated users can manage tasks."
+    },
+     "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Stores project information. All authenticated users can manage projects."
+    },
+    "/projects/{projectId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/ProjectTask" },
+      "description": "Stores tasks for a specific project. All authenticated users can manage project tasks."
     },
     "/financials/{financialEntryId}": {
         "schema": { "$ref": "#/entities/FinancialEntry" },

@@ -6,6 +6,8 @@ import { Header } from '@/components/layout/header';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { useUser } from '@/firebase';
 import { Loader2 } from 'lucide-react';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -26,13 +28,15 @@ function AppContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
-      <SidebarNav />
-      <SidebarInset>
-        <Header />
-        <main className="flex-1 p-4 sm:p-6 md:p-8">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+    <DndProvider backend={HTML5Backend}>
+      <SidebarProvider>
+        <SidebarNav />
+        <SidebarInset>
+          <Header />
+          <main className="flex-1 p-4 sm:p-6 md:p-8">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </DndProvider>
   );
 }
 

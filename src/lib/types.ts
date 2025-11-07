@@ -46,7 +46,7 @@ export type Notification = {
 };
 
 export type FinancialEntry = {
-    id: string;
+    id:string;
     description: string;
     amount: number;
     type: 'Income' | 'Expense' | 'Investment';
@@ -54,4 +54,39 @@ export type FinancialEntry = {
     date: Timestamp;
     currency: 'USD' | 'AED' | 'INR';
     notes?: string;
+};
+
+export type Project = {
+    id: string;
+    projectName: string;
+    clientName: string;
+    description: string;
+    startDate: Timestamp;
+    endDate: Timestamp;
+    status: 'Not Started' | 'In Progress' | 'Completed' | 'On Hold';
+    budget?: number;
+    team: string[]; // Array of user IDs
+};
+
+export type ProjectTask = {
+    id: string;
+    title: string;
+    description?: string;
+    status: 'To Do' | 'In Progress' | 'Done';
+    assigneeId?: string;
+    assigneeName?: string;
+    assigneeAvatar?: string;
+    startDate: Timestamp;
+    endDate: Timestamp;
+};
+
+export type GeneratedPlan = {
+  phases: Array<{
+    phaseName: string;
+    tasks: Array<{
+      taskName: string;
+      description: string;
+      durationDays: number;
+    }>;
+  }>;
 };

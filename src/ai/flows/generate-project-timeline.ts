@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * @fileOverview AI-powered project timeline generator.
+ * @fileOverview AI-powered project timeline and plan generator.
  *
- * - generateProjectTimeline - A function that generates a project timeline.
+ * - generateProjectTimeline - A function that generates a structured project plan.
  * - GenerateProjectTimelineInput - The input type for the generateProjectTimeline function.
  * - GenerateProjectTimelineOutput - The return type for the generateProjectTimeline function.
  */
@@ -24,7 +24,7 @@ export type GenerateProjectTimelineInput = z.infer<
 >;
 
 const GenerateProjectTimelineOutputSchema = z.object({
-  timeline: z.string().describe('The generated project timeline.'),
+  timeline: z.string().describe(`A structured project plan in JSON format. The JSON should be a single object with a 'phases' key, which is an array of phase objects. Each phase object should have 'phaseName' (string) and 'tasks' (an array of task objects). Each task object should have 'taskName' (string), 'description' (string), and 'durationDays' (number). Example: {"phases": [{"phaseName": "Discovery", "tasks": [{"taskName": "Initial Meeting", "description": "Discuss project goals.", "durationDays": 1}]}]}`),
 });
 export type GenerateProjectTimelineOutput = z.infer<
   typeof GenerateProjectTimelineOutputSchema
@@ -42,18 +42,23 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateProjectTimelineOutputSchema},
   prompt: `You are Sasha, an AI assistant specializing in project management.
 
-  Based on the project scope and complexity provided, generate a project timeline.
+  Based on the project scope and complexity provided, generate a structured project plan.
 
   Project Scope: {{{projectScope}}}
   Project Complexity: {{{projectComplexity}}}
 
-  Consider the following factors when creating the timeline:
-  - Project goals and deliverables
-  - Technical difficulty
-  - Team size
-  - Dependencies
+  Your output MUST be a valid JSON object containing a single key "phases".
+  The "phases" key should be an array of objects, where each object represents a project phase.
+  Each phase object must have two keys:
+  1. "phaseName": A string for the name of the phase (e.g., "Phase 1: Discovery & Planning").
+  2. "tasks": An array of task objects for that phase.
 
-  Return the timeline in a readable format.
+  Each task object must have three keys:
+  1. "taskName": A string for the specific task.
+  2. "description": A brief string describing the task.
+  3. "durationDays": A number representing the estimated duration in days.
+
+  Do not include any text or formatting outside of the main JSON object.
   `,
 });
 
