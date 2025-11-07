@@ -92,7 +92,7 @@ export function NotificationBell() {
                         <p className="font-semibold text-sm">{notification.title}</p>
                         <p className="text-sm text-muted-foreground">{notification.message}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
+                            {notification.createdAt ? formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
                         </p>
                     </div>
                     </div>
