@@ -1,8 +1,8 @@
 
-import { ShieldCheck, Zap, Layers, BrainCircuit, Mail, MessageSquare, Video, CircleDollarSign } from 'lucide-react';
+import { ShieldCheck, Zap, Layers, BrainCircuit, Mail, MessageSquare, Video, CircleDollarSign, Users2, GanttChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Logo, LogoIcon } from '@/components/logo';
+import { Logo } from '@/components/logo';
 
 const features = [
   {
@@ -13,12 +13,17 @@ const features = [
   {
     icon: <Layers className="h-8 w-8 text-primary" />,
     title: 'Comprehensive Project Management',
-    description: "Define, plan, and execute projects seamlessly. Our platform supports detailed project creation, team assignments, and budget tracking. Use AI to generate structured project timelines and phases instantly.",
+    description: "Define, plan, and execute projects seamlessly. Our platform supports detailed project creation with client details, budgets, and timelines. Leverage AI to generate structured project plans and task lists instantly, right from the project creation screen.",
   },
   {
-    icon: <MessageSquare className="h-8 w-8 text-primary" />,
-    title: 'Advanced Collaboration Hub',
-    description: 'A centralized hub for real-time communication. Share files, convert conversations directly into actionable tickets, and use AI to draft messages, ensuring your team is aligned and efficient.',
+    icon: <GanttChart className="h-8 w-8 text-primary" />,
+    title: 'Integrated Task Management',
+    description: "Manage both general team tickets and project-specific tasks through intuitive Kanban boards. Convert chat messages into actionable tasks with a single click, and assign them to team members who receive instant notifications.",
+  },
+   {
+    icon: <Users2 className="h-8 w-8 text-primary" />,
+    title: 'Resource & Team Allocation',
+    description: "Manage your team directly from the project detail page. Add or remove members from projects, with changes reflected in real-time. Automated notifications ensure team members are always aware of their new assignments.",
   },
   {
     icon: <CircleDollarSign className="h-8 w-8 text-primary" />,
@@ -31,9 +36,14 @@ const features = [
     description: 'Automate repetitive tasks from lead creation to task assignment. Our AI analyzes patterns to predict lead ROI and assess risks, freeing your team to focus on strategic growth and closing high-value deals.',
   },
   {
+    icon: <MessageSquare className="h-8 w-8 text-primary" />,
+    title: 'Advanced Collaboration Hub',
+    description: 'A centralized hub for real-time communication. Share files, convert conversations directly into actionable tickets, and use AI to draft messages, ensuring your team is aligned and efficient.',
+  },
+  {
     icon: <Video className="h-8 w-8 text-primary" />,
     title: 'Integrated HD Conferencing',
-    description: 'Seamlessly transition from chat to a face-to-face video conference. Conduct strategy sessions, client calls, or daily stand-ups with high-definition video directly within the platform, keeping all communication in one place.',
+    description: 'Seamlessly transition from chat to a face-to-face video conference. Conduct strategy sessions or client calls with high-definition video directly within the platform, keeping all communication in one place.',
   },
   {
     icon: <ShieldCheck className="h-8 w-8 text-primary" />,
@@ -60,7 +70,6 @@ export default function AboutPage() {
       </header>
 
       <main className="container mx-auto px-4 py-16 text-center">
-        <LogoIcon className="mx-auto h-16 w-16 text-primary mb-4" />
         <h1 className="text-4xl md:text-6xl font-headline tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-primary">
           The Future of Intelligent CRM
         </h1>
@@ -73,7 +82,7 @@ export default function AboutPage() {
         <h2 className="text-3xl md:text-4xl font-headline text-center mb-12">Core Pillars of SashaLeads AI</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature) => (
-            <Card key={feature.title} className="bg-card/50 backdrop-blur-sm border-border/50 text-center">
+            <Card key={feature.title} className="bg-card/50 backdrop-blur-sm border-border/50 text-center transform hover:-translate-y-1 transition-transform duration-300">
               <CardHeader>
                 <div className="mx-auto bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
                   {feature.icon}
@@ -92,7 +101,7 @@ export default function AboutPage() {
         <h2 className="text-3xl md:text-4xl font-headline text-center mb-12">On the Horizon</h2>
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           {upcomingFeatures.map((feature, index) => (
-            <div key={index} className="p-6 border border-dashed border-border/30 rounded-lg">
+            <div key={index} className="p-6 border border-dashed border-border/30 rounded-lg bg-card/20">
                 <h3 className="font-semibold text-primary mb-2">{feature.title}</h3>
                 <p className="text-sm text-muted-foreground">{feature.description}</p>
             </div>
