@@ -66,6 +66,7 @@ export type Project = {
     status: 'Not Started' | 'In Progress' | 'Completed' | 'On Hold';
     budget?: number;
     team: string[]; // Array of user IDs
+    aiGeneratedPlan?: GeneratedPlan;
 };
 
 export type ProjectTask = {

@@ -95,6 +95,7 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
       startDate: Timestamp.fromDate(values.dates.from),
       endDate: Timestamp.fromDate(values.dates.to),
       team: [], // Not implemented yet
+      aiGeneratedPlan: generatedPlan || null,
     };
     delete (payload as any).dates;
 
@@ -204,7 +205,7 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
                             <FormItem>
                             <FormLabel>Budget ($)</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="10000" {...field} />
+                                <Input type="number" placeholder="10000" {...field} value={field.value ?? ''} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>

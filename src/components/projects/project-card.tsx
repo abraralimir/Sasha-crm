@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "../ui/badge";
 import { format, formatDistanceToNow } from "date-fns";
 import { Progress } from "../ui/progress";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 type ProjectCardProps = {
     project: Project;
@@ -35,30 +37,32 @@ export function ProjectCard({ project }: ProjectCardProps) {
     const progress = calculateProgress();
     
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{project.projectName}</CardTitle>
-                    <Badge className={statusStyles[project.status]}>{project.status}</Badge>
-                </div>
-                <CardDescription>For: {project.clientName}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground line-clamp-3">{project.description}</p>
-                <div>
-                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                        <span>Progress</span>
-                        <span>{Math.round(progress)}%</span>
+        <Link href={`/projects/${project.id}`} className="block">
+            <Card className="h-full transition-all hover:shadow-lg hover:border-primary/50">
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg">{project.projectName}</CardTitle>
+                        <Badge className={cn("whitespace-nowrap", statusStyles[project.status])}>{project.status}</Badge>
                     </div>
-                    <Progress value={progress} />
-                </div>
-            </CardContent>
-            <CardFooter className="text-xs text-muted-foreground justify-between">
-                <span>{format(project.startDate.toDate(), 'MMM d, yyyy')} - {format(project.endDate.toDate(), 'MMM d, yyyy')}</span>
-                {project.budget && (
-                    <span className="font-semibold">${project.budget.toLocaleString()}</span>
-                )}
-            </CardFooter>
-        </Card>
+                    <CardDescription>For: {project.clientName}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground line-clamp-3 h-[3.75rem]">{project.description}</p>
+                    <div>
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                            <span>Progress</span>
+                            <span>{Math.round(progress)}%</span>
+                        </div>
+                        <Progress value={progress} />
+                    </div>
+                </CardContent>
+                <CardFooter className="text-xs text-muted-foreground justify-between">
+                    <span>{format(project.startDate.toDate(), 'MMM d, yyyy')} - {format(project.endDate.toDate(), 'MMM d, yyyy')}</span>
+                    {project.budget && (
+                        <span className="font-semibold">${project.budget.toLocaleString()}</span>
+                    )}
+                </CardFooter>
+            </Card>
+        </Link>
     );
 }

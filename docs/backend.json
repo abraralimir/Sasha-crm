@@ -136,7 +136,11 @@
         "endDate": { "type": "object" },
         "status": { "type": "string", "enum": ["Not Started", "In Progress", "Completed", "On Hold"] },
         "budget": { "type": "number" },
-        "team": { "type": "array", "items": { "type": "string" } }
+        "team": { "type": "array", "items": { "type": "string" } },
+        "aiGeneratedPlan": { 
+          "type": "object",
+          "description": "The AI-generated project plan."
+        }
       },
       "required": ["projectName", "clientName", "status", "startDate", "endDate"]
     },
