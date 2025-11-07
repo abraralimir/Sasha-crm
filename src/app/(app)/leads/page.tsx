@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { collection, doc, updateDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle, BrainCircuit, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,8 @@ import { AddLeadForm } from '@/components/dashboard/add-lead-form';
 import type { Lead } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { assessLeadRisk, AssessLeadRiskOutput } from '@/ai/flows/assess-lead-risk';
+import { predictLeadROI, PredictLeadROIOutput } from '@/ai/flows/predict-lead-roi';
 
 type LeadWithId = Lead & { id: string; lastContacted: Timestamp };
 
@@ -25,6 +27,12 @@ export default function LeadsPage() {
   const { toast } = useToast();
   const [filter, setFilter] = useState('');
   const [isCreateLeadOpen, setCreateLeadOpen] = useState(false);
+  const [isAiRiskOpen, setAiRiskOpen] = useState(false);
+  const [isAiRoiOpen, setAiRoiOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadWithId | null>(null);
+  const [riskAnalysis, setRiskAnalysis] = useState<AssessLeadRiskOutput | null>(null);
+  const [roiPrediction, setRoiPrediction] = useState<PredictLeadROIOutput | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const leadsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -37,7 +45,7 @@ export default function LeadsPage() {
     if (!firestore) return;
     const leadRef = doc(firestore, 'leads', leadId);
     try {
-      await updateDoc(leadRef, { status: newStatus });
+      await updateDoc(leadRef, { status: newStatus, lastContacted: Timestamp.now() });
       toast({
         title: 'Status Updated',
         description: `Lead status changed to ${newStatus}.`,
@@ -51,6 +59,44 @@ export default function LeadsPage() {
       });
     }
   };
+  
+  const handleAiRiskAnalysis = async (lead: LeadWithId) => {
+    setSelectedLead(lead);
+    setAiRiskOpen(true);
+    setIsAiLoading(true);
+    setRiskAnalysis(null);
+    try {
+      const result = await assessLeadRisk({
+        leadDetails: JSON.stringify(lead),
+        marketTrends: "Current market trends show a shift towards digital transformation in this sector.",
+        historicalData: "Similar leads have a 25% conversion rate with an average deal size of $15,000."
+      });
+      setRiskAnalysis(result);
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'AI Risk Analysis Failed' });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAiRoiPrediction = async (lead: LeadWithId) => {
+    setSelectedLead(lead);
+    setAiRoiOpen(true);
+    setIsAiLoading(true);
+    setRoiPrediction(null);
+    try {
+      const result = await predictLeadROI({
+        leadDetails: JSON.stringify(lead),
+        marketTrends: "High demand for AI-powered solutions in this vertical.",
+        historicalData: "Past projects with similar scope yielded an average ROI of 350% over two years."
+      });
+      setRoiPrediction(result);
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'AI ROI Prediction Failed' });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   const filteredLeads = leads?.filter(lead =>
     lead.contactName.toLowerCase().includes(filter.toLowerCase()) ||
@@ -58,7 +104,16 @@ export default function LeadsPage() {
     lead.email.toLowerCase().includes(filter.toLowerCase())
   ).sort((a, b) => b.lastContacted.toMillis() - a.lastContacted.toMillis());
 
+  const getRiskSeverityColor = (severity: 'low' | 'medium' | 'high') => {
+    switch (severity) {
+      case 'low': return 'text-green-500';
+      case 'medium': return 'text-yellow-500';
+      case 'high': return 'text-red-500';
+    }
+  }
+
   return (
+    <>
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
@@ -112,10 +167,10 @@ export default function LeadsPage() {
                   <TableRow>
                     <TableHead>Contact</TableHead>
                     <TableHead>Company</TableHead>
-                    <TableHead className="hidden sm:table-cell">Email</TableHead>
                     <TableHead className="hidden lg:table-cell">Potential Revenue</TableHead>
                     <TableHead className="hidden md:table-cell">Last Contacted</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">AI Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -124,7 +179,6 @@ export default function LeadsPage() {
                       <TableRow key={lead.id}>
                         <TableCell className="font-medium">{lead.contactName}</TableCell>
                         <TableCell>{lead.companyName}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-muted-foreground">{lead.email}</TableCell>
                         <TableCell className="hidden lg:table-cell text-muted-foreground">
                             {lead.potentialRevenue ? `$${lead.potentialRevenue.toLocaleString()}`: 'N/A'}
                         </TableCell>
@@ -145,6 +199,10 @@ export default function LeadsPage() {
                             </SelectContent>
                           </Select>
                         </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => handleAiRiskAnalysis(lead)}><AlertTriangle className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleAiRoiPrediction(lead)}><TrendingUp className="h-4 w-4" /></Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
@@ -161,5 +219,58 @@ export default function LeadsPage() {
         </CardContent>
       </Card>
     </div>
+
+    <Dialog open={isAiRiskOpen} onOpenChange={setAiRiskOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><BrainCircuit /> AI Risk Analysis</DialogTitle>
+            <DialogDescription>For lead: {selectedLead?.contactName}</DialogDescription>
+          </DialogHeader>
+          {isAiLoading ? <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div> : (
+            riskAnalysis && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold">Overall Risk Score: {riskAnalysis.overallRiskScore}/100</h3>
+                  <p className="text-sm text-muted-foreground">{riskAnalysis.recommendation}</p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Key Risk Factors:</h4>
+                  {riskAnalysis.riskFactors.map((rf, i) => (
+                    <Card key={i}>
+                      <CardContent className="p-3">
+                        <p className="font-semibold">{rf.factor} <span className={getRiskSeverityColor(rf.severity)}>({rf.severity})</span></p>
+                        {rf.mitigationStrategy && <p className="text-xs text-muted-foreground mt-1">Suggestion: {rf.mitigationStrategy}</p>}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isAiRoiOpen} onOpenChange={setAiRoiOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><TrendingUp /> AI ROI Prediction</DialogTitle>
+            <DialogDescription>For lead: {selectedLead?.contactName}</DialogDescription>
+          </DialogHeader>
+          {isAiLoading ? <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div> : (
+            roiPrediction && (
+              <div className="space-y-4 text-center">
+                <div className="text-4xl font-bold">{roiPrediction.predictedROI.toFixed(1)}%</div>
+                <div className="text-sm">
+                  <p className="font-semibold">Confidence Level: <span className="font-normal text-primary">{roiPrediction.confidenceLevel}</span></p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">{roiPrediction.reasoning}</p>
+                </div>
+              </div>
+            )
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
