@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -5,7 +6,7 @@ import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebas
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection, query, where, doc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import type { Project, ProjectTask, UserProfile } from '@/lib/types';
-import { Loader2, Calendar, DollarSign, BrainCircuit, Flag, Info, Users, Plus, Minus, ClipboardList, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2, Calendar, DollarSign, BrainCircuit, Flag, Info, Users, Plus, Minus, ClipboardList, Trash2, AlertTriangle, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +25,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { AddTaskForm } from '@/components/dashboard/add-task-form';
+import { ProjectTaskForm } from '@/components/projects/project-task-form';
 import { useState } from 'react';
 import { TaskColumn } from '@/components/tickets/task-column';
 import {
@@ -56,7 +57,7 @@ export default function ProjectDetailPage() {
   const { toast } = useToast();
   const { user: currentUser } = useUser();
 
-  const [isCreateTicketOpen, setCreateTicketOpen] = useState(false);
+  const [isCreateTaskOpen, setCreateTaskOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<ProjectTask | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   
@@ -241,9 +242,23 @@ export default function ProjectDetailPage() {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5 text-primary"/> Project Tasks</CardTitle>
-                    <CardDescription>A Kanban board for tasks specific to this project.</CardDescription>
+                <CardHeader className='flex-row items-center justify-between'>
+                    <div>
+                        <CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5 text-primary"/> Project Tasks</CardTitle>
+                        <CardDescription>A Kanban board for tasks specific to this project.</CardDescription>
+                    </div>
+                    <Dialog open={isCreateTaskOpen} onOpenChange={setCreateTaskOpen}>
+                        <DialogTrigger asChild>
+                            <Button size="sm"><PlusCircle className='mr-2 h-4 w-4' />Create Task</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Create Project Task</DialogTitle>
+                                <DialogDescription>Assign a new task for the "{project.projectName}" project.</DialogDescription>
+                            </DialogHeader>
+                            <ProjectTaskForm projectId={project.id} onTaskCreated={() => setCreateTaskOpen(false)} />
+                        </DialogContent>
+                    </Dialog>
                 </CardHeader>
                 <CardContent>
                     {tasksLoading ? (
@@ -334,16 +349,6 @@ export default function ProjectDetailPage() {
         </div>
       </div>
     </div>
-    
-    <Dialog open={isCreateTicketOpen} onOpenChange={setCreateTicketOpen}>
-        <DialogContent>
-        <DialogHeader>
-            <DialogTitle>Create a New Project Task</DialogTitle>
-            <DialogDescription>Assign a new task to a team member for this project.</DialogDescription>
-        </DialogHeader>
-        <AddTaskForm onTaskCreated={() => setCreateTicketOpen(false)} />
-        </DialogContent>
-    </Dialog>
 
     <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>

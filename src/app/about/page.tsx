@@ -1,3 +1,4 @@
+
 import { ShieldCheck, Zap, Layers, BrainCircuit, Mail, MessageSquare, Video, CircleDollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,11 @@ const features = [
     icon: <BrainCircuit className="h-8 w-8 text-primary" />,
     title: 'Platform-Aware AI Assistant',
     description: "Engage with Sasha, an AI that has a deep, real-time understanding of your entire CRM. Ask complex questions about leads, tasks, and financials and get instant, data-driven answers to accelerate decision-making.",
+  },
+  {
+    icon: <Layers className="h-8 w-8 text-primary" />,
+    title: 'Comprehensive Project Management',
+    description: "Define, plan, and execute projects seamlessly. Our platform supports detailed project creation, team assignments, and budget tracking. Use AI to generate structured project timelines and phases instantly.",
   },
   {
     icon: <MessageSquare className="h-8 w-8 text-primary" />,

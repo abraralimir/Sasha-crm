@@ -8,8 +8,8 @@ import { AddTaskForm } from '@/components/dashboard/add-task-form';
 import { AddLeadForm } from '@/components/dashboard/add-lead-form';
 import { RegisteredUsers } from '@/components/dashboard/registered-users';
 import { KpiCard } from '@/components/dashboard/kpi-card';
-import { DollarSign, Users, ListChecks } from 'lucide-react';
-import type { Lead, Task } from '@/lib/types';
+import { DollarSign, Users, ListChecks, Layers } from 'lucide-react';
+import type { Lead, Task, Project } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { subDays } from 'date-fns';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -31,6 +31,12 @@ export default function DashboardPage() {
   }, [firestore]);
   const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksCollection);
   
+  const projectsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'projects');
+  }, [firestore]);
+  const { data: projects, isLoading: projectsLoading } = useCollection<Project>(projectsCollection);
+
   const kpis = useMemo(() => {
     const oneMonthAgo = subDays(new Date(), 30);
 
@@ -45,6 +51,10 @@ export default function DashboardPage() {
     const activeTasksCount = tasks
       ?.filter(task => task.status === 'To Do' || task.status === 'In Progress')
       .length || 0;
+
+    const inProgressProjectsCount = projects
+        ?.filter(project => project.status === 'In Progress')
+        .length || 0;
 
     return [
       {
@@ -62,10 +72,15 @@ export default function DashboardPage() {
         value: `${activeTasksCount}`,
         icon: <ListChecks className="text-yellow-500" />,
       },
+      {
+        title: "In Progress Projects",
+        value: `${inProgressProjectsCount}`,
+        icon: <Layers className="text-purple-500" />,
+      },
     ];
-  }, [leads, tasks]);
+  }, [leads, tasks, projects]);
 
-  const isLoading = leadsLoading || tasksLoading;
+  const isLoading = leadsLoading || tasksLoading || projectsLoading;
 
   return (
     <div className="space-y-8">
@@ -76,9 +91,9 @@ export default function DashboardPage() {
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
+            Array.from({ length: 4 }).map((_, i) => (
                 <Card key={i}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Skeleton className="h-4 w-2/3" />
