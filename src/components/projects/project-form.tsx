@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as z from 'zod';
@@ -54,6 +55,7 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
       clientName: project?.clientName || '',
       description: project?.description || '',
       status: project?.status || 'Not Started',
+      budget: project?.budget || '',
     },
   });
 
