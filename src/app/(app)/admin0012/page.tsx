@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, UserPlus, Camera, RefreshCcw } from 'lucide-react';
+import { Loader2, Upload, UserPlus, Camera, RefreshCcw, UserCheck } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -272,10 +272,9 @@ export default function AdminPage() {
                     {users?.filter(u => u.facialVerificationImageUrl).map(user => (
                         <div key={user.id} className="flex items-center justify-between p-2 rounded-md bg-secondary">
                             <div className='flex items-center gap-3'>
-                                <Avatar>
-                                    <AvatarImage src={user.facialVerificationImageUrl} />
-                                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                                </Avatar>
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                                    <UserCheck className="h-5 w-5 text-primary" />
+                                </div>
                                 <div>
                                     <p className="font-medium">{user.name}</p>
                                     <p className="text-sm text-muted-foreground">{user.email}</p>
