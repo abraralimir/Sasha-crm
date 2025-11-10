@@ -11,11 +11,11 @@ export const contentType = 'image/png';
 
 export default async function Image() {
   const interRegular = fetch(
-    new URL('https://rsms.me/inter/font-files/Inter-Regular.woff', import.meta.url)
+    'https://rsms.me/inter/font-files/Inter-Regular.woff'
   ).then((res) => res.arrayBuffer());
 
   const interBold = fetch(
-    new URL('https://rsms.me/inter/font-files/Inter-Bold.woff', import.meta.url)
+    'https://rsms.me/inter/font-files/Inter-Bold.woff'
   ).then((res) => res.arrayBuffer());
 
   return new ImageResponse(

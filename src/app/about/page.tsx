@@ -11,6 +11,7 @@ import {
   CircleDollarSign,
   Briefcase,
   Clock,
+  UserCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +30,12 @@ const features = [
     title: 'Comprehensive Project Management',
     description:
       'Define, plan, and execute projects seamlessly. Leverage AI to generate structured project plans and task lists instantly, and manage progress with an integrated Kanban board on the project detail page.',
+  },
+  {
+    icon: <UserCheck className="h-8 w-8 text-primary" />,
+    title: 'Facial Recognition Verification',
+    description:
+      'Enhance security with a cutting-edge facial verification system. Users can securely access the platform via a quick facial scan, which our AI validates against an enrolled reference image in real-time.',
   },
   {
     icon: <Briefcase className="h-8 w-8 text-primary" />,
@@ -65,12 +72,6 @@ const features = [
     title: 'Integrated HD Conferencing',
     description:
       'Seamlessly transition from chat to a face-to-face video conference. Conduct strategy sessions or client calls with high-definition video directly within the platform, keeping all communication in one place.',
-  },
-  {
-    icon: <ShieldCheck className="h-8 w-8 text-primary" />,
-    title: 'Uncompromising Security',
-    description:
-      'Built on a foundation of enterprise-grade security. From a mandatory verification gate to a powerful, granular data security model, your data is encrypted, isolated, and protected at every layer.',
   },
 ];
 
