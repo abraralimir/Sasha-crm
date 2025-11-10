@@ -14,8 +14,8 @@ service cloud.firestore {
       // Allow authenticated users to read the list of all users.
       allow list: if isSignedIn();
       
-      // Allow a user to read their own document.
-      allow get: if isSignedIn() && request.auth.uid == userId;
+      // Allow a user to read their own document or any other user's document.
+      allow get: if isSignedIn();
 
       // Allow a user to create their own document upon signup.
       allow create: if isSignedIn() && request.auth.uid == userId;
@@ -68,5 +68,25 @@ service cloud.firestore {
         // Allow a user to create or update their own status document.
         allow write: if isSignedIn() && userId == request.auth.uid;
     }
+
+    // Rules for 'leaveRequests' collection
+    match /leaveRequests/{leaveId} {
+        // All authenticated users can read all requests.
+        allow read: if isSignedIn();
+        // A user can create a request for themselves.
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        // Future rule: only managers can update (approve/deny). For now, allow user to update their own.
+        allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+    
+    // Rules for 'policyDocuments' collection
+    match /policyDocuments/{docId} {
+        // All authenticated users can read documents.
+        allow read: if isSignedIn();
+        // Write access should be restricted to admins in a real app. For now, disable it for clients.
+        allow write: if false; 
+    }
   }
 }
+
+    

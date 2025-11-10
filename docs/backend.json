@@ -23,6 +23,18 @@
           "type": "string",
           "description": "URL to the user's profile picture.",
           "format": "uri"
+        },
+        "jobTitle": {
+          "type": "string",
+          "description": "The user's job title."
+        },
+        "department": {
+          "type": "string",
+          "description": "The department the user belongs to."
+        },
+        "startDate": {
+          "type": "object",
+          "description": "The user's start date in the company."
         }
       },
       "required": [
@@ -200,6 +212,36 @@
         "lastSeen": { "type": "object" }
       },
       "required": ["userId", "userName", "status", "lastSeen"]
+    },
+    "LeaveRequest": {
+        "title": "Leave Request",
+        "description": "Represents a user's request for time off.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "userName": { "type": "string" },
+            "leaveType": { "type": "string", "enum": ["Paid Time Off", "Sick Leave", "Unpaid Leave"] },
+            "startDate": { "type": "object" },
+            "endDate": { "type": "object" },
+            "reason": { "type": "string" },
+            "status": { "type": "string", "enum": ["Pending", "Approved", "Denied"] },
+            "createdAt": { "type": "object" }
+        },
+        "required": ["userId", "userName", "leaveType", "startDate", "endDate", "status", "createdAt"]
+    },
+    "PolicyDocument": {
+        "title": "Policy Document",
+        "description": "Represents an official company policy or document.",
+        "type": "object",
+        "properties": {
+            "title": { "type": "string" },
+            "category": { "type": "string" },
+            "fileUrl": { "type": "string", "format": "uri" },
+            "fileName": { "type": "string" },
+            "version": { "type": "string" },
+            "createdAt": { "type": "object" }
+        },
+        "required": ["title", "category", "fileUrl", "fileName", "createdAt"]
     }
   },
   "auth": {
@@ -248,6 +290,16 @@
     "/userStatus/{userId}": {
       "schema": { "$ref": "#/entities/UserStatus" },
       "description": "Stores the real-time presence of users. Users can only update their own status."
+    },
+    "/leaveRequests/{leaveId}": {
+        "schema": { "$ref": "#/entities/LeaveRequest" },
+        "description": "Stores leave requests from users. All authenticated users can read all requests, but only create their own."
+    },
+    "/policyDocuments/{docId}": {
+        "schema": { "$ref": "#/entities/PolicyDocument" },
+        "description": "Stores company policies and documents. All authenticated users can read. (Write access should be restricted)."
     }
   }
 }
+
+    
