@@ -1,3 +1,4 @@
+
 import { Timestamp } from "firebase/firestore";
 
 export type Lead = {
@@ -107,4 +108,16 @@ export type UserStatus = {
     status: 'active' | 'away' | 'on-break' | 'offline';
     lastSeen: Timestamp;
     todayActiveSeconds: number;
+};
+
+export type LeaveRequest = {
+    id: string;
+    userId: string;
+    userName: string;
+    leaveType: 'Paid Time Off' | 'Sick Leave' | 'Unpaid Leave';
+    startDate: Timestamp;
+    endDate: Timestamp;
+    reason: string;
+    status: 'Pending' | 'Approved' | 'Denied';
+    createdAt: Timestamp;
 };

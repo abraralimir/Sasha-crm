@@ -4,15 +4,18 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, Timestamp } from 'firebase/firestore';
-import type { UserStatus, AttendanceLog, UserProfile } from '@/lib/types';
+import type { UserStatus, AttendanceLog, UserProfile, LeaveRequest } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Loader2, Play, Pause, LogOut, Timer, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Play, Pause, LogOut, Timer, ChevronDown, ChevronUp, PlusCircle, CalendarOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { usePresence } from '@/hooks/use-presence';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { LeaveRequestForm } from '@/components/hr/leave-request-form';
+import { Badge } from '@/components/ui/badge';
 
 const getInitials = (name?: string | null) => {
   if (!name) return 'U';
@@ -32,6 +35,7 @@ export default function AttendancePage() {
   const { startBreak, endBreak, manualCheckout } = usePresence();
   
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [isRequestLeaveOpen, setRequestLeaveOpen] = useState(false);
 
   // 1. Fetch all users
   const allUsersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
@@ -42,8 +46,21 @@ export default function AttendancePage() {
     return firestore ? collection(firestore, 'userStatus') : null;
   }, [firestore]);
   const { data: userStatuses, isLoading: statusesLoading } = useCollection<UserStatus>(userStatusCollection);
+  
+  // 3. Fetch user's leave requests
+  const leaveRequestsQuery = useMemoFirebase(() => {
+    if (!firestore || !currentUser) return null;
+    return query(
+      collection(firestore, 'leaveRequests'),
+      where('userId', '==', currentUser.uid),
+      where('status', '==', 'Approved'),
+      where('startDate', '>=', Timestamp.now())
+    )
+  }, [firestore, currentUser]);
+  const { data: approvedLeave, isLoading: leaveLoading } = useCollection<LeaveRequest>(leaveRequestsQuery);
 
-  // 3. Fetch today's attendance logs
+
+  // 4. Fetch today's attendance logs
   const [dailyLogs, setDailyLogs] = useState<Record<string, AttendanceLog[]>>({});
   const [activeTimers, setActiveTimers] = useState<Record<string, number>>({});
   
@@ -131,7 +148,7 @@ export default function AttendancePage() {
     });
   };
 
-  const isLoading = statusesLoading || logsLoading || usersLoading;
+  const isLoading = statusesLoading || logsLoading || usersLoading || leaveLoading;
   const currentUserStatus = userStatuses?.find(s => s.id === currentUser?.uid);
   const currentUserActiveTime = activeTimers[currentUser?.uid || ''] || 0;
 
@@ -142,9 +159,21 @@ export default function AttendancePage() {
           <h1 className="text-3xl font-bold">Team Attendance</h1>
           <p className="text-muted-foreground">Real-time overview of your team's activity today.</p>
         </div>
+        <Dialog open={isRequestLeaveOpen} onOpenChange={setRequestLeaveOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline"><PlusCircle className="mr-2 h-4 w-4" />Request Leave</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Submit a Leave Request</DialogTitle>
+                    <DialogDescription>Please fill out the form below to request time off.</DialogDescription>
+                </DialogHeader>
+                <LeaveRequestForm onFinished={() => setRequestLeaveOpen(false)} />
+            </DialogContent>
+        </Dialog>
       </div>
       
-       <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
             <CardHeader>
                 <CardTitle>My Session</CardTitle>
@@ -172,6 +201,34 @@ export default function AttendancePage() {
                     Check Out
                     </Button>
                 </div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Upcoming Leave</CardTitle>
+                <CardDescription>Your approved upcoming time off.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin" /></div> : (
+                    approvedLeave && approvedLeave.length > 0 ? (
+                        <div className='space-y-2'>
+                           {approvedLeave.slice(0, 2).map(leave => (
+                                <div key={leave.id} className="p-2 rounded-md bg-secondary flex items-center justify-between">
+                                    <div>
+                                        <p className="font-semibold text-sm">{leave.leaveType}</p>
+                                        <p className="text-xs text-muted-foreground">{format(leave.startDate.toDate(), 'MMM dd')} - {format(leave.endDate.toDate(), 'MMM dd, yyyy')}</p>
+                                    </div>
+                                    <Badge variant="default">Approved</Badge>
+                                </div>
+                           ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                            <CalendarOff className="h-8 w-8" />
+                            <p className="mt-2 text-sm">No upcoming leave scheduled.</p>
+                        </div>
+                    )
+                )}
             </CardContent>
         </Card>
        </div>

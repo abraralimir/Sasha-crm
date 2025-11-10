@@ -75,8 +75,8 @@ service cloud.firestore {
         allow read: if isSignedIn();
         // A user can create a request for themselves.
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        // Future rule: only managers can update (approve/deny). For now, allow user to update their own.
-        allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
+        // Allow any authenticated user to update a request (for HR approval/denial).
+        allow update: if isSignedIn();
     }
     
     // Rules for 'policyDocuments' collection
@@ -88,5 +88,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

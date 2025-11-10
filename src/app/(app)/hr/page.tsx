@@ -1,13 +1,14 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, Timestamp, getDocs, doc, setDoc } from 'firebase/firestore';
+import { useFirestore, useCollection, useUser, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, orderBy, Timestamp, getDocs, doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import type { UserProfile, AttendanceLog, Task, LeaveRequest, PolicyDocument } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, AlertCircle, PlusCircle, Briefcase, FileText, Banknote, CalendarDays, Download } from 'lucide-react';
+import { Loader2, AlertCircle, PlusCircle, Briefcase, FileText, Banknote, CalendarDays, Download, ThumbsUp, ThumbsDown, KeyRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +18,8 @@ import { LeaveRequestForm } from '@/components/hr/leave-request-form';
 import { PolicyUploadForm } from '@/components/hr/policy-upload-form';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
 
 type UserReport = {
     user: UserProfile;
@@ -188,7 +191,15 @@ function EmployeeReportTab() {
 
 function LeaveManagementTab() {
     const firestore = useFirestore();
+    const { user: currentUser } = useUser();
+    const { toast } = useToast();
     const [isRequestLeaveOpen, setRequestLeaveOpen] = useState(false);
+    const [isActionAlertOpen, setActionAlertOpen] = useState(false);
+    const [actionRequest, setActionRequest] = useState<{request: LeaveRequest, action: 'Approved' | 'Denied'} | null>(null);
+    const [secretCode, setSecretCode] = useState('');
+    const [secretCodeError, setSecretCodeError] = useState('');
+
+    const HR_SECRET_CODE = '0012';
 
     const leaveRequestsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -197,7 +208,58 @@ function LeaveManagementTab() {
 
     const { data: leaveRequests, isLoading } = useCollection<LeaveRequest>(leaveRequestsCollection);
 
+    const handleActionClick = (request: LeaveRequest, action: 'Approved' | 'Denied') => {
+        setActionRequest({ request, action });
+        setActionAlertOpen(true);
+        setSecretCode('');
+        setSecretCodeError('');
+    }
+
+    const confirmAction = async () => {
+        if (!firestore || !actionRequest || !currentUser) return;
+        
+        if (secretCode !== HR_SECRET_CODE) {
+            setSecretCodeError('Invalid secret code.');
+            return;
+        }
+
+        const { request, action } = actionRequest;
+        const requestRef = doc(firestore, 'leaveRequests', request.id);
+
+        try {
+            await updateDoc(requestRef, { status: action });
+            
+            const notificationPayload = {
+                title: `Leave Request ${action}`,
+                message: `Your leave request for ${format(request.startDate.toDate(), 'MMM dd')} - ${format(request.endDate.toDate(), 'MMM dd')} has been ${action.toLowerCase()}.`,
+                link: '/attendance',
+                read: false,
+                createdAt: serverTimestamp(),
+            };
+
+            const userNotifCollection = collection(firestore, `users/${request.userId}/notifications`);
+            addDocumentNonBlocking(userNotifCollection, notificationPayload);
+
+            toast({
+                title: `Request ${action}`,
+                description: `${request.userName}'s leave request has been ${action.toLowerCase()}.`
+            });
+        } catch(error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to update leave request status.'
+            });
+        } finally {
+            setActionAlertOpen(false);
+            setActionRequest(null);
+            setSecretCode('');
+            setSecretCodeError('');
+        }
+    }
+
     return (
+        <>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -229,6 +291,7 @@ function LeaveManagementTab() {
                                     <TableHead>Type</TableHead>
                                     <TableHead>Dates</TableHead>
                                     <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -241,11 +304,23 @@ function LeaveManagementTab() {
                                             <TableCell>
                                                 <Badge variant={getStatusBadgeVariant(request.status)}>{request.status}</Badge>
                                             </TableCell>
+                                            <TableCell className="text-right">
+                                                {request.status === 'Pending' && (
+                                                    <div className="flex gap-2 justify-end">
+                                                        <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleActionClick(request, 'Approved')}>
+                                                            <ThumbsUp className="h-4 w-4 text-green-500" />
+                                                        </Button>
+                                                        <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleActionClick(request, 'Denied')}>
+                                                            <ThumbsDown className="h-4 w-4 text-red-500" />
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">No leave requests found.</TableCell>
+                                        <TableCell colSpan={5} className="h-24 text-center">No leave requests found.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -254,6 +329,35 @@ function LeaveManagementTab() {
                 )}
             </CardContent>
         </Card>
+        <AlertDialog open={isActionAlertOpen} onOpenChange={setActionAlertOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Action</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        You are about to <span className={cn('font-bold', actionRequest?.action === 'Approved' ? 'text-green-500' : 'text-red-500')}>{actionRequest?.action}</span> this request. 
+                        Enter the HR secret code to confirm.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2">
+                    <div className="relative">
+                        <KeyRound className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            type="password"
+                            placeholder="Secret Code"
+                            className="pl-8"
+                            value={secretCode}
+                            onChange={(e) => { setSecretCode(e.target.value); setSecretCodeError(''); }}
+                        />
+                    </div>
+                    {secretCodeError && <p className="text-sm text-destructive">{secretCodeError}</p>}
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmAction}>Confirm</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 }
 
