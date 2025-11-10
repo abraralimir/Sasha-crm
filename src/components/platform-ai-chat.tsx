@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Bot, Loader2, Send, X } from 'lucide-react';
 import { platformAwareAIChat, PlatformAwareAIChatInput } from '@/ai/flows/platform-aware-ai-chat';
 import { Button } from '@/components/ui/button';
