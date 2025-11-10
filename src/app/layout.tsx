@@ -4,10 +4,38 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase';
 import { cn } from '@/lib/utils';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
 export const metadata: Metadata = {
-  title: 'SashaLeads AI',
-  description: 'AI-Powered Lead Management and Analytics',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'SashaLeads AI',
+    template: `%s | SashaLeads AI`,
+  },
+  description: 'SashaLeads is an intelligent, AI-powered CRM designed to streamline sales, task management, and team collaboration.',
+  openGraph: {
+    title: 'SashaLeads AI',
+    description: 'The Future of Intelligent CRM',
+    url: siteUrl,
+    siteName: 'SashaLeads AI',
+    images: [
+      {
+        url: '/sasha-og.png', // Default OG image
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SashaLeads AI',
+    description: 'The Future of Intelligent CRM',
+    images: ['/sasha-og.png'],
+  },
 };
+
 
 const faviconSvg = `
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
