@@ -18,8 +18,9 @@ import { ScrollArea } from './ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import type { Lead, Task, UserProfile, FinancialEntry } from '@/lib/types';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
+import { startOfDay, endOfDay } from 'date-fns';
+import type { Lead, Task, UserProfile, FinancialEntry, AttendanceLog } from '@/lib/types';
 
 
 type Message = {
@@ -41,12 +42,25 @@ export function PlatformAiChat() {
   const tasksCollection = useMemoFirebase(() => firestore ? collection(firestore, 'tasks') : null, [firestore]);
   const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
   const financialsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'financials') : null, [firestore]);
+  
+  const todayStart = useMemo(() => startOfDay(new Date()), []);
+  const todayEnd = useMemo(() => endOfDay(new Date()), []);
+
+  const attendanceQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'attendance'),
+      where('timestamp', '>=', todayStart),
+      where('timestamp', '<=', todayEnd)
+    );
+  }, [firestore, todayStart, todayEnd]);
 
 
   const { data: leads, isLoading: leadsLoading } = useCollection<Lead>(leadsCollection);
   const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksCollection);
   const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersCollection);
   const { data: financials, isLoading: financialsLoading } = useCollection<FinancialEntry>(financialsCollection);
+  const { data: attendance, isLoading: attendanceLoading } = useCollection<AttendanceLog>(attendanceQuery);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,6 +84,7 @@ export function PlatformAiChat() {
         tasksJson: JSON.stringify(tasks || []),
         usersJson: JSON.stringify(users || []),
         financialsJson: JSON.stringify(financials || []),
+        attendanceJson: JSON.stringify(attendance || []),
       };
       const result = await platformAwareAIChat(chatInput);
       const assistantMessage: Message = { role: 'assistant', content: result.response };
@@ -87,7 +102,7 @@ export function PlatformAiChat() {
     }
   };
   
-  const isDataLoading = leadsLoading || tasksLoading || usersLoading || financialsLoading;
+  const isDataLoading = leadsLoading || tasksLoading || usersLoading || financialsLoading || attendanceLoading;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

@@ -20,6 +20,7 @@ const PlatformAwareAIChatInputSchema = z.object({
   tasksJson: z.string().describe('A JSON string representing all the tasks/tickets in the system.'),
   usersJson: z.string().describe('A JSON string representing all the users in the system.'),
   financialsJson: z.string().describe('A JSON string representing all financial entries in the system.'),
+  attendanceJson: z.string().describe('A JSON string representing all attendance log entries for the current day.'),
 });
 export type PlatformAwareAIChatInput = z.infer<typeof PlatformAwareAIChatInputSchema>;
 
@@ -40,17 +41,20 @@ const prompt = ai.definePrompt({
     tasksJson: z.string(),
     usersJson: z.string(),
     financialsJson: z.string(),
+    attendanceJson: z.string(),
     query: z.string(),
   })},
   output: {schema: PlatformAwareAIChatOutputSchema},
   prompt: `You are Sasha AI, an expert assistant with real-time knowledge of this CRM platform.
   Your current user's ID is {{userId}}.
-  You have been provided with the full dataset for leads, tasks, users, and financials as JSON data. All financial data has been converted to USD for consistency. Use this data as your primary source of truth to answer any questions.
+  You have been provided with the full dataset for leads, tasks, users, financials, and today's attendance as JSON data. All financial data has been converted to USD for consistency. Use this data as your primary source of truth to answer any questions.
 
   Leads Data: {{{leadsJson}}}
   Tasks/Tickets Data: {{{tasksJson}}}
   Users Data: {{{usersJson}}}
   Financials Data (in USD): {{{financialsJson}}}
+  Today's Attendance Data: {{{attendanceJson}}}
+
 
   Be helpful and provide detailed, actionable information based on the provided data.
 
@@ -60,6 +64,7 @@ const prompt = ai.definePrompt({
   - "Summarize the ticket about the Innovate Inc. follow-up"
   - "List all registered users"
   - "What was our biggest expense last month in USD?"
+  - "Who has worked less than 2 hours today?"
 
   Current Date: ${new Date().toLocaleDateString()}
   Query: {{{query}}}`,
