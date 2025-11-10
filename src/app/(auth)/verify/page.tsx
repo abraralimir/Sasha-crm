@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -58,6 +59,7 @@ export default function VerifyPage() {
 
   useEffect(() => {
     sessionStorage.removeItem('isVerified');
+    sessionStorage.removeItem('verifiedEmail');
     const timer = setTimeout(() => setStep('verification'), 1500);
     return () => clearTimeout(timer);
   }, []);
@@ -150,6 +152,7 @@ export default function VerifyPage() {
     if (input.trim() === allowedUsers[currentUserEmail].code) {
         setStep('success');
         sessionStorage.setItem('isVerified', 'true');
+        sessionStorage.setItem('verifiedEmail', currentUserEmail);
         toast({ title: 'Verification Successful!', description: 'Redirecting to sign-up...' });
         setTimeout(() => router.push('/signup'), 1500);
     } else {
@@ -176,7 +179,7 @@ export default function VerifyPage() {
 
     let matched = false;
     for (const user of users || []) {
-      if (!user.facialVerificationImageUrl) continue;
+      if (!user.facialVerificationImageUrl || !user.email) continue;
 
       try {
         const result = await facialVerification({
@@ -187,6 +190,7 @@ export default function VerifyPage() {
         if (result.isMatch && result.confidence > 0.8) {
           setStep('success');
           sessionStorage.setItem('isVerified', 'true');
+          sessionStorage.setItem('verifiedEmail', user.email);
           toast({ title: 'Facial Verification Successful!', description: `Welcome, ${user.name}. Redirecting...` });
           setTimeout(() => router.push('/login'), 1500);
           matched = true;
@@ -312,3 +316,5 @@ export default function VerifyPage() {
     </>
   );
 }
+
+    

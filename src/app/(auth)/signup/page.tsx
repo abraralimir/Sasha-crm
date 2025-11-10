@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -28,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -51,6 +53,15 @@ export default function SignupPage() {
     },
   });
 
+  useEffect(() => {
+    const verifiedEmail = sessionStorage.getItem('verifiedEmail');
+    if (verifiedEmail) {
+      form.setValue('email', verifiedEmail);
+    }
+  }, [form]);
+
+  const isEmailLocked = !!sessionStorage.getItem('verifiedEmail');
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
@@ -59,6 +70,7 @@ export default function SignupPage() {
       await createUserProfile(newUser, values.name);
       
       sessionStorage.removeItem('isVerified');
+      sessionStorage.removeItem('verifiedEmail');
       toast({
         title: "Account Created",
         description: "You have been successfully signed up. Redirecting...",
@@ -120,7 +132,7 @@ export default function SignupPage() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="name@example.com" {...field} />
+                    <Input placeholder="name@example.com" {...field} disabled={isEmailLocked}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -154,3 +166,5 @@ export default function SignupPage() {
     </Card>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -27,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }),
@@ -45,10 +47,21 @@ export default function LoginPage() {
     },
   });
 
+  useEffect(() => {
+    const verifiedEmail = sessionStorage.getItem('verifiedEmail');
+    if (verifiedEmail) {
+      form.setValue('email', verifiedEmail);
+    }
+  }, [form]);
+  
+  const isEmailLocked = !!sessionStorage.getItem('verifiedEmail');
+
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       sessionStorage.removeItem('isVerified');
+      sessionStorage.removeItem('verifiedEmail');
       toast({
         title: "Login Successful",
         description: "Redirecting to your dashboard...",
@@ -85,7 +98,7 @@ export default function LoginPage() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="name@example.com" {...field} />
+                    <Input placeholder="name@example.com" {...field} disabled={isEmailLocked} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -119,3 +132,5 @@ export default function LoginPage() {
     </Card>
   );
 }
+
+    
