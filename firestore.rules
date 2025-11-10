@@ -72,7 +72,7 @@ service cloud.firestore {
     // Rules for 'leaveRequests' collection
     match /leaveRequests/{leaveId} {
         // All authenticated users can read all requests.
-        allow read: if isSignedIn();
+        allow list, get: if isSignedIn();
         // A user can create a request for themselves.
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
         // Allow any authenticated user to update a request (for HR approval/denial).
