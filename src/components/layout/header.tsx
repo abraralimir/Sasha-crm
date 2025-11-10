@@ -2,6 +2,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserNav } from "@/components/layout/user-nav";
 import { PlatformAiChat } from "../platform-ai-chat";
 import { NotificationBell } from "./notification-bell";
+import { LiveClock } from "./live-clock";
 
 
 export function Header() {
@@ -13,7 +14,8 @@ export function Header() {
       <div className="flex-1">
         {/* Can add breadcrumbs or page title here */}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
+        <LiveClock />
         <PlatformAiChat />
         <NotificationBell />
         <UserNav />

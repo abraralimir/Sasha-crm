@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Loader2, Play, Pause, LogOut, Timer, IndianRupee, ChevronDown, ChevronUp, Clock, Calendar } from 'lucide-react';
+import { Loader2, Play, Pause, LogOut, Timer, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { usePresence } from '@/hooks/use-presence';
@@ -25,28 +25,6 @@ const formatDuration = (totalSeconds: number) => {
   const seconds = Math.floor(totalSeconds % 60);
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
-
-const IST_TIME_ZONE = 'Asia/Kolkata';
-
-const LiveClock = () => {
-    const [time, setTime] = useState(new Date());
-
-    useEffect(() => {
-        const timer = setInterval(() => setTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
-
-    return (
-        <div>
-            <p className="text-2xl font-bold font-mono">
-                {time.toLocaleTimeString('en-US', { timeZone: IST_TIME_ZONE, hour12: true })}
-            </p>
-            <p className="text-sm text-muted-foreground">
-                {time.toLocaleDateString('en-GB', { timeZone: IST_TIME_ZONE, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-        </div>
-    )
-}
 
 export default function AttendancePage() {
   const firestore = useFirestore();
@@ -166,7 +144,7 @@ export default function AttendancePage() {
         </div>
       </div>
       
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+       <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
         <Card>
             <CardHeader>
                 <CardTitle>My Session</CardTitle>
@@ -194,16 +172,6 @@ export default function AttendancePage() {
                     Check Out
                     </Button>
                 </div>
-            </CardContent>
-        </Card>
-         <Card>
-            <CardHeader>
-                <CardTitle>Current Time (IST)</CardTitle>
-                <CardDescription>Live time based on Indian Standard Time.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center gap-4">
-                <Clock className="h-8 w-8 text-primary"/>
-                <LiveClock />
             </CardContent>
         </Card>
        </div>
