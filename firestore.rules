@@ -64,9 +64,13 @@ service cloud.firestore {
     // Rules for the 'userStatus' collection
     match /userStatus/{userId} {
         // Allow any authenticated user to read the status of any user.
-        allow read: if isSignedIn();
+        allow get: if isSignedIn();
         // Allow a user to create or update their own status document.
         allow write: if isSignedIn() && userId == request.auth.uid;
+    }
+     match /userStatus {
+        // Allow any authenticated user to list all user statuses for the attendance page.
+        allow list: if isSignedIn();
     }
   }
 }
