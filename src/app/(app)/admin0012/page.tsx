@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,14 +25,17 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, UserPlus } from 'lucide-react';
+import { Loader2, Upload, UserPlus, Camera, RefreshCcw } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from '@/lib/utils';
+
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  image: z.instanceof(File).refine(file => file.size > 0, 'A reference image is required.'),
+  imageFile: z.instanceof(File).optional(),
 });
 
 const getInitials = (name?: string | null) => {
@@ -42,6 +46,11 @@ const getInitials = (name?: string | null) => {
 export default function AdminPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
+
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
   const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersCollection);
@@ -54,8 +63,69 @@ export default function AdminPage() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const getCameraPermission = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+          setHasCameraPermission(false);
+          toast({ variant: 'destructive', title: 'Camera not supported' });
+          return;
+      }
+      try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+          }
+      } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({ variant: 'destructive', title: 'Camera Access Denied' });
+      }
+  };
+
+  const handleTabChange = (value: string) => {
+    if (value === 'capture' && hasCameraPermission === null) {
+      getCameraPermission();
+    } else if (value === 'upload' && videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  };
+  
+  const handleCapture = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+    const dataUrl = canvas.toDataURL('image/jpeg');
+    setCapturedImage(dataUrl);
+  };
+
+  const onSubmit = async (values: z.infer<typeof formSchema>, imageSource: 'upload' | 'capture') => {
     if (!firestore) return;
+
+    let imageUrl = '';
+    let imageName = '';
+
+    if (imageSource === 'upload') {
+      if (!values.imageFile) {
+        toast({ variant: 'destructive', title: 'No Image', description: 'Please select an image file to upload.' });
+        return;
+      }
+      // Placeholder for actual file upload to Firebase Storage
+      imageName = values.imageFile.name;
+      imageUrl = `https://storage.placeholder.com/faces/${values.email}/${imageName}`;
+    } else if (imageSource === 'capture') {
+      if (!capturedImage) {
+        toast({ variant: 'destructive', title: 'No Image', description: 'Please capture an image from the webcam.' });
+        return;
+      }
+      imageName = `capture-${Date.now()}.jpg`;
+      // Here you would upload the base64 `capturedImage` to storage
+      imageUrl = capturedImage;
+    }
 
     const usersQuery = query(collection(firestore, 'users'), where('email', '==', values.email));
     
@@ -68,12 +138,9 @@ export default function AdminPage() {
       
       const userDoc = querySnapshot.docs[0];
 
-      // Placeholder for actual file upload to Firebase Storage
-      const fileUrl = `https://storage.placeholder.com/faces/${userDoc.id}/${values.image.name}`;
-
       await updateDoc(doc(firestore, 'users', userDoc.id), { 
         name: values.name,
-        facialVerificationImageUrl: fileUrl,
+        facialVerificationImageUrl: imageUrl,
        });
 
       toast({
@@ -81,6 +148,7 @@ export default function AdminPage() {
         description: `Facial verification image has been set for ${values.name}.`,
       });
       form.reset();
+      setCapturedImage(null);
 
     } catch (error) {
       console.error('Error updating user for facial verification:', error);
@@ -103,11 +171,11 @@ export default function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><UserPlus /> Enroll User for Facial Recognition</CardTitle>
-            <CardDescription>Upload a reference photo for a user to enable facial verification.</CardDescription>
+            <CardDescription>Upload or capture a reference photo for a user to enable facial verification.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form className="space-y-4">
                 <FormField
                   control={form.control}
                   name="email"
@@ -134,28 +202,58 @@ export default function AdminPage() {
                     </FormItem>
                   )}
                 />
-                 <FormField
-                    control={form.control}
-                    name="image"
-                    render={({ field: { onChange, value, ...rest } }) => (
-                        <FormItem>
-                        <FormLabel>Reference Photo</FormLabel>
-                        <FormControl>
-                            <Input
-                            type="file"
-                            accept="image/jpeg, image/png"
-                            onChange={(e) => onChange(e.target.files?.[0])}
-                            {...rest}
-                            />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                  Set Reference Image
-                </Button>
+                 <Tabs defaultValue="upload" className="w-full" onValueChange={handleTabChange}>
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="upload">Upload</TabsTrigger>
+                        <TabsTrigger value="capture">Capture</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="upload" className="pt-4">
+                        <FormField
+                            control={form.control}
+                            name="imageFile"
+                            render={({ field: { onChange, value, ...rest } }) => (
+                                <FormItem>
+                                <FormLabel>Reference Photo File</FormLabel>
+                                <FormControl>
+                                    <Input type="file" accept="image/jpeg, image/png" onChange={(e) => onChange(e.target.files?.[0])} {...rest} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button onClick={form.handleSubmit((v) => onSubmit(v, 'upload'))} className="w-full mt-4" disabled={form.formState.isSubmitting}>
+                          {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                          Set via Upload
+                        </Button>
+                    </TabsContent>
+                    <TabsContent value="capture" className="pt-4 space-y-4">
+                        <div className="aspect-video w-full bg-secondary rounded-md overflow-hidden relative flex items-center justify-center">
+                            <video ref={videoRef} className={cn("w-full h-full object-cover", { 'hidden': !hasCameraPermission || capturedImage })} autoPlay playsInline muted />
+                            <canvas ref={canvasRef} className="hidden"></canvas>
+                            {hasCameraPermission === false && <p className="text-destructive-foreground">Camera access denied.</p>}
+                            {hasCameraPermission === null && <Loader2 className="h-8 w-8 animate-spin" />}
+                            {capturedImage && <img src={capturedImage} alt="Captured reference" className="w-full h-full object-cover" />}
+                        </div>
+
+                        {capturedImage ? (
+                          <div className='flex gap-2'>
+                              <Button onClick={() => setCapturedImage(null)} variant="outline" className="w-full">
+                                <RefreshCcw className="mr-2 h-4 w-4" />
+                                Retake
+                              </Button>
+                              <Button onClick={form.handleSubmit((v) => onSubmit(v, 'capture'))} className="w-full" disabled={form.formState.isSubmitting}>
+                                {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                Set via Capture
+                              </Button>
+                          </div>
+                        ) : (
+                          <Button onClick={handleCapture} className="w-full" disabled={!hasCameraPermission}>
+                            <Camera className="mr-2 h-4 w-4" />
+                            Capture Photo
+                          </Button>
+                        )}
+                    </TabsContent>
+                </Tabs>
               </form>
             </Form>
           </CardContent>
@@ -193,3 +291,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
