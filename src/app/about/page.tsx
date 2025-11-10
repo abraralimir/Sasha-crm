@@ -1,5 +1,5 @@
 
-import { ShieldCheck, Zap, Layers, BrainCircuit, Mail, MessageSquare, Video, CircleDollarSign, Users2, GanttChart } from 'lucide-react';
+import { ShieldCheck, Zap, Layers, BrainCircuit, Mail, MessageSquare, Video, CircleDollarSign, Users2, GanttChart, Briefcase, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
@@ -8,22 +8,22 @@ const features = [
   {
     icon: <BrainCircuit className="h-8 w-8 text-primary" />,
     title: 'Platform-Aware AI Assistant',
-    description: "Engage with Sasha, an AI that has a deep, real-time understanding of your entire CRM. Ask complex questions about leads, tasks, and financials and get instant, data-driven answers to accelerate decision-making.",
+    description: "Engage with Sasha, an AI with real-time knowledge of your CRM. Ask complex questions about leads, tasks, financials, and even daily employee attendance to get instant, data-driven answers.",
   },
   {
     icon: <Layers className="h-8 w-8 text-primary" />,
     title: 'Comprehensive Project Management',
-    description: "Define, plan, and execute projects seamlessly. Our platform supports detailed project creation with client details, budgets, and timelines. Leverage AI to generate structured project plans and task lists instantly, right from the project creation screen.",
+    description: "Define, plan, and execute projects seamlessly. Leverage AI to generate structured project plans and task lists instantly, and manage progress with an integrated Kanban board on the project detail page.",
   },
   {
-    icon: <GanttChart className="h-8 w-8 text-primary" />,
-    title: 'Integrated Task Management',
-    description: "Manage both general team tickets and project-specific tasks through intuitive Kanban boards. Convert chat messages into actionable tasks with a single click, and assign them to team members who receive instant notifications.",
+    icon: <Briefcase className="h-8 w-8 text-primary" />,
+    title: 'Human Resources Hub',
+    description: "Access a centralized HR dashboard. Monitor daily employee performance with detailed reports on work hours and task completion, and manage company policies with an integrated document upload and viewing system.",
   },
-   {
-    icon: <Users2 className="h-8 w-8 text-primary" />,
-    title: 'Resource & Team Allocation',
-    description: "Manage your team directly from the project detail page. Add or remove members from projects, with changes reflected in real-time. Automated notifications ensure team members are always aware of their new assignments.",
+  {
+    icon: <Clock className="h-8 w-8 text-primary" />,
+    title: 'Real-Time Attendance & Presence',
+    description: "Track your team's live status, work hours, and breaks with an automated presence system. Employees can check-in, manage breaks, and check-out, providing clear visibility into daily team activity.",
   },
   {
     icon: <CircleDollarSign className="h-8 w-8 text-primary" />,
@@ -55,7 +55,7 @@ const features = [
 const upcomingFeatures = [
     { title: 'Predictive Lead Scoring', description: 'AI will automatically score new leads based on their likelihood to convert, allowing your team to prioritize efforts with precision.' },
     { title: 'Automated Email Sequences', description: 'Nurture leads with intelligent, automated email campaigns triggered by custom events and actions directly from within the CRM.' },
-    { title: 'Deeper AI Analytics', description: 'Gain even deeper insights with advanced AI-driven reports on team performance, sales forecasting, and emerging market trends.' },
+    { title: 'Complete Payroll & Leave Management', description: 'A full suite to manage payroll, process salaries, and handle employee time-off requests from a centralized, secure dashboard.' },
 ];
 
 export default function AboutPage() {
