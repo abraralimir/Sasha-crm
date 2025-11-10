@@ -110,14 +110,12 @@ export type UserStatus = {
     todayActiveSeconds: number;
 };
 
-export type LeaveRequest = {
+export type PolicyDocument = {
     id: string;
-    userId: string;
-    userName: string;
-    leaveType: 'Paid Time Off' | 'Sick Leave' | 'Unpaid Leave';
-    startDate: Timestamp;
-    endDate: Timestamp;
-    reason: string;
-    status: 'Pending' | 'Approved' | 'Denied';
+    title: string;
+    category: string;
+    fileUrl: string;
+    fileName: string;
+    version: string;
     createdAt: Timestamp;
 };

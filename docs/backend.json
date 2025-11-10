@@ -221,22 +221,6 @@
       },
       "required": ["userId", "userName", "status", "lastSeen"]
     },
-    "LeaveRequest": {
-        "title": "Leave Request",
-        "description": "Represents a user's request for time off.",
-        "type": "object",
-        "properties": {
-            "userId": { "type": "string" },
-            "userName": { "type": "string" },
-            "leaveType": { "type": "string", "enum": ["Paid Time Off", "Sick Leave", "Unpaid Leave"] },
-            "startDate": { "type": "object" },
-            "endDate": { "type": "object" },
-            "reason": { "type": "string" },
-            "status": { "type": "string", "enum": ["Pending", "Approved", "Denied"] },
-            "createdAt": { "type": "object" }
-        },
-        "required": ["userId", "userName", "leaveType", "startDate", "endDate", "status", "createdAt"]
-    },
     "PolicyDocument": {
         "title": "Policy Document",
         "description": "Represents an official company policy or document.",
@@ -298,10 +282,6 @@
     "/userStatus/{userId}": {
       "schema": { "$ref": "#/entities/UserStatus" },
       "description": "Stores the real-time presence of users. Users can only update their own status."
-    },
-    "/leaveRequests/{leaveId}": {
-        "schema": { "$ref": "#/entities/LeaveRequest" },
-        "description": "Stores leave requests from users. All authenticated users can read all requests, but only create their own."
     },
     "/policyDocuments/{docId}": {
         "schema": { "$ref": "#/entities/PolicyDocument" },
