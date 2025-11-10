@@ -172,28 +172,28 @@ export default function AttendancePage() {
                 <CardTitle>My Session</CardTitle>
                 <CardDescription>Your current work session details and controls.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-                <Timer className="h-8 w-8 text-primary"/>
-                <div>
-                <p className="text-muted-foreground">Today's Active Time</p>
-                <p className="text-2xl font-bold font-mono">{formatDuration(currentUserActiveTime)}</p>
+            <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <Timer className="h-8 w-8 text-primary"/>
+                    <div>
+                    <p className="text-muted-foreground">Today's Active Time</p>
+                    <p className="text-2xl font-bold font-mono">{formatDuration(currentUserActiveTime)}</p>
+                    </div>
                 </div>
-            </div>
-            <div className="flex gap-2">
-                <Button
-                variant="outline"
-                onClick={currentUserStatus?.status === 'on-break' ? endBreak : startBreak}
-                disabled={currentUserStatus?.status === 'offline' || !currentUserStatus}
-                >
-                {currentUserStatus?.status === 'on-break' ? <Play className="mr-2"/> : <Pause className="mr-2" />}
-                {currentUserStatus?.status === 'on-break' ? 'End Break' : 'Start Break'}
-                </Button>
-                <Button variant="destructive" onClick={manualCheckout} disabled={currentUserStatus?.status === 'offline'}>
-                <LogOut className="mr-2"/>
-                Check Out
-                </Button>
-            </div>
+                <div className="flex items-center gap-2">
+                    <Button
+                    variant="outline"
+                    onClick={currentUserStatus?.status === 'on-break' ? endBreak : startBreak}
+                    disabled={currentUserStatus?.status === 'offline' || !currentUserStatus}
+                    >
+                    {currentUserStatus?.status === 'on-break' ? <Play className="mr-2"/> : <Pause className="mr-2" />}
+                    {currentUserStatus?.status === 'on-break' ? 'End Break' : 'Start Break'}
+                    </Button>
+                    <Button variant="destructive" onClick={manualCheckout} disabled={currentUserStatus?.status === 'offline'}>
+                    <LogOut className="mr-2"/>
+                    Check Out
+                    </Button>
+                </div>
             </CardContent>
         </Card>
          <Card>
@@ -311,4 +311,3 @@ export default function AttendancePage() {
     </div>
   );
 }
-
