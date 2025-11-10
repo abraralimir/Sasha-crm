@@ -112,14 +112,15 @@ export function PolicyUploadForm({ onFinished }: PolicyUploadFormProps) {
         <FormField
             control={form.control}
             name="file"
-            render={({ field }) => (
+            render={({ field: { onChange, value, ...rest } }) => (
                 <FormItem>
                 <FormLabel>Policy Document</FormLabel>
                 <FormControl>
                     <Input
                     type="file"
                     accept=".pdf,.doc,.docx"
-                    onChange={(e) => field.onChange(e.target.files?.[0])}
+                    onChange={(e) => onChange(e.target.files?.[0])}
+                    {...rest}
                     />
                 </FormControl>
                 <FormMessage />
@@ -134,3 +135,5 @@ export function PolicyUploadForm({ onFinished }: PolicyUploadFormProps) {
     </Form>
   );
 }
+
+    
