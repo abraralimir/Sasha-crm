@@ -175,6 +175,31 @@
             "notes": { "type": "string" }
         },
         "required": ["description", "amount", "type", "category", "date", "currency"]
+    },
+    "AttendanceLog": {
+      "title": "Attendance Log",
+      "description": "Represents a single check-in, check-out, or break event for a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "type": { "type": "string", "enum": ["check-in", "check-out", "break-start", "break-end"] },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["userId", "userName", "type", "timestamp"]
+    },
+    "UserStatus": {
+      "title": "User Status",
+      "description": "Represents the real-time presence status of a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userAvatar": { "type": "string", "format": "uri" },
+        "status": { "type": "string", "enum": ["active", "away", "on-break", "offline"] },
+        "lastSeen": { "type": "object" }
+      },
+      "required": ["userId", "userName", "status", "lastSeen"]
     }
   },
   "auth": {
@@ -215,6 +240,14 @@
     "/users/{userId}/notifications/{notificationId}": {
         "schema": { "$ref": "#/entities/Notification" },
         "description": "Stores notifications for a specific user. Users can only access their own notifications."
+    },
+    "/attendance/{logId}": {
+      "schema": { "$ref": "#/entities/AttendanceLog" },
+      "description": "Stores user attendance events. Users can create their own logs."
+    },
+    "/userStatus/{userId}": {
+      "schema": { "$ref": "#/entities/UserStatus" },
+      "description": "Stores the real-time presence of users. Users can only update their own status."
     }
   }
 }

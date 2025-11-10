@@ -91,3 +91,20 @@ export type GeneratedPlan = {
     }>;
   }>;
 };
+
+export type AttendanceLog = {
+    id: string;
+    userId: string;
+    userName: string;
+    type: 'check-in' | 'check-out' | 'break-start' | 'break-end';
+    timestamp: Timestamp;
+};
+
+export type UserStatus = {
+    id: string; // This will be the userId
+    userName: string;
+    userAvatar?: string;
+    status: 'active' | 'away' | 'on-break' | 'offline';
+    lastSeen: Timestamp;
+    todayActiveSeconds: number;
+};

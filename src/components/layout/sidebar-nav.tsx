@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, MessageSquare, Users, Video, ClipboardList, CircleDollarSign, Layers, GanttChart, Users2 } from 'lucide-react';
+import { LayoutGrid, MessageSquare, Users, Video, ClipboardList, CircleDollarSign, Layers, GanttChart, Users2, Clock } from 'lucide-react';
 
 import {
   Sidebar,
@@ -15,6 +15,7 @@ import { Logo, LogoIcon } from '@/components/logo';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
+  { href: '/attendance', label: 'Attendance', icon: Clock },
   { href: '/leads', label: 'Leads', icon: Users },
   { href: '/projects', label: 'Projects', icon: Layers },
   { href: '/project-tasks', label: 'Project Tasks', icon: GanttChart },
