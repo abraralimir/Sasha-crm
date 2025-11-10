@@ -64,6 +64,16 @@ export default function VerifyPage() {
     return () => clearTimeout(timer);
   }, []);
 
+  const stopCamera = useCallback(() => {
+    if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+        setHasCameraPermission(null); // Reset permission state to allow re-requesting if needed
+    }
+  }, []);
+
+
   const getCameraPermission = useCallback(async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setHasCameraPermission(false);
@@ -84,8 +94,16 @@ export default function VerifyPage() {
   const handleTabChange = (value: string) => {
     if (value === 'face' && hasCameraPermission === null) {
       getCameraPermission();
+    } else if (value !== 'face') {
+        stopCamera();
     }
   };
+
+  useEffect(() => {
+    return () => {
+        stopCamera();
+    }
+  }, [stopCamera]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -173,39 +191,49 @@ export default function VerifyPage() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const context = canvas.getContext('2d');
-    if (!context) return;
+    if (!context) {
+        setIsLoading(false);
+        return;
+    }
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     const capturedImageUri = canvas.toDataURL('image/jpeg');
 
     let matched = false;
-    for (const user of users || []) {
-      if (!user.facialVerificationImageUrl || !user.email) continue;
+    try {
+        for (const user of users || []) {
+            if (!user.facialVerificationImageUrl || !user.email) continue;
 
-      try {
-        const result = await facialVerification({
-          capturedImageUri,
-          referenceImageUrl: user.facialVerificationImageUrl
-        });
+            try {
+                const result = await facialVerification({
+                capturedImageUri,
+                referenceImageUrl: user.facialVerificationImageUrl
+                });
 
-        if (result.isMatch && result.confidence > 0.8) {
-          setStep('success');
-          sessionStorage.setItem('isVerified', 'true');
-          sessionStorage.setItem('verifiedEmail', user.email);
-          toast({ title: 'Facial Verification Successful!', description: `Welcome, ${user.name}. Redirecting...` });
-          setTimeout(() => router.push('/login'), 1500);
-          matched = true;
-          break;
+                if (result.isMatch && result.confidence > 0.8) {
+                setStep('success');
+                sessionStorage.setItem('isVerified', 'true');
+                sessionStorage.setItem('verifiedEmail', user.email);
+                toast({ title: 'Facial Verification Successful!', description: `Welcome, ${user.name}. Redirecting...` });
+                setTimeout(() => router.push('/login'), 1500);
+                matched = true;
+                break;
+                }
+            } catch (error) {
+                console.error("Facial verification AI error:", error);
+            }
         }
-      } catch (error) {
-        console.error("Facial verification AI error:", error);
-      }
+        
+        if (!matched) {
+            setErrorMessage("Facial recognition failed. Please try again or use a secret key.");
+            handleFailedAttempt();
+        }
+    } catch (error) {
+        console.error("An error occurred during the verification loop:", error);
+        setErrorMessage("An unexpected error occurred during verification.");
+    } finally {
+        setIsLoading(false);
+        stopCamera();
     }
-    
-    if (!matched) {
-        setErrorMessage("Facial recognition failed. Please try again or use a secret key.");
-        handleFailedAttempt();
-    }
-    setIsLoading(false);
   };
 
   const containerVariants = {
@@ -317,4 +345,3 @@ export default function VerifyPage() {
   );
 }
 
-    
