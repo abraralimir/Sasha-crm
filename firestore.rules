@@ -60,23 +60,25 @@ service cloud.firestore {
         // Allow a user to create their own log entry.
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
-
+    
     // Rules for the 'userStatus' collection
     match /userStatus/{userId} {
         // Allow any authenticated user to list all statuses and get any single status.
-        allow get, list: if isSignedIn();
+        allow list, get: if isSignedIn();
         // Allow a user to create or update their own status document.
         allow write: if isSignedIn() && userId == request.auth.uid;
     }
 
     // Rules for 'leaveRequests' collection
     match /leaveRequests/{leaveId} {
-        // All authenticated users can read all requests.
-        allow list, get: if isSignedIn();
         // A user can create a request for themselves.
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        // Allow any authenticated user to update a request (for HR approval/denial).
-        allow update: if isSignedIn();
+        // All authenticated users can read individual requests and update them (for HR approval).
+        allow get, update: if isSignedIn();
+    }
+    // Separate rule to allow LISTING the entire collection
+    match /leaveRequests {
+        allow list: if isSignedIn();
     }
     
     // Rules for 'policyDocuments' collection
