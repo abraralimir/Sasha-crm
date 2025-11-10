@@ -24,6 +24,11 @@
           "description": "URL to the user's profile picture.",
           "format": "uri"
         },
+        "facialVerificationImageUrl": {
+            "type": "string",
+            "description": "URL to the user's trusted reference photo for facial verification.",
+            "format": "uri"
+        },
         "jobTitle": {
           "type": "string",
           "description": "The user's job title."
