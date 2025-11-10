@@ -35,6 +35,7 @@ export type UserProfile = {
     name: string;
     email: string;
     profilePictureUrl?: string;
+    facialVerificationImageUrl?: string;
 };
 
 export type Notification = {

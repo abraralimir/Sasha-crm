@@ -14,12 +14,16 @@ import { LogoIcon } from '@/components/logo';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { facialVerification } from '@/ai/flows/facial-verification';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+
 
 // --- Existing User Data (with new facialVerificationImageUrl) ---
-const allowedUsers: Record<string, { code: string; facialVerificationImageUrl: string }> = {
-  'alimirabrar@gmail.com': { code: '0012', facialVerificationImageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjE2NjU3ODF8MA&ixlib=rb-4.1.0&q=80&w=1080' },
-  'saleem@bitstek.io': { code: '0776', facialVerificationImageUrl: 'https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjE2NjU3ODF8MA&ixlib=rb-4.1.0&q=80&w=1080' },
-  'adil@bitstek.io': { code: '0779', facialVerificationImageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjE2NjU3ODF8MA&ixlib=rb-4.1.0&q=80&w=1080' },
+const allowedUsers: Record<string, { code: string; }> = {
+  'alimirabrar@gmail.com': { code: '0012' },
+  'saleem@bitstek.io': { code: '0776' },
+  'adil@bitstek.io': { code: '0779' },
 };
 
 const MAX_ATTEMPTS = 5;
@@ -46,6 +50,11 @@ export default function VerifyPage() {
   const { toast } = useToast();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const firestore = useFirestore();
+  const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
+  const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersCollection);
+
 
   useEffect(() => {
     sessionStorage.removeItem('isVerified');
@@ -152,7 +161,7 @@ export default function VerifyPage() {
   }
 
   const handleFacialVerification = async () => {
-    if (!videoRef.current || !canvasRef.current || isLoading || isLockedOut) return;
+    if (!videoRef.current || !canvasRef.current || isLoading || isLockedOut || usersLoading) return;
     setIsLoading(true);
     setErrorMessage('');
 
@@ -166,17 +175,19 @@ export default function VerifyPage() {
     const capturedImageUri = canvas.toDataURL('image/jpeg');
 
     let matched = false;
-    for (const email in allowedUsers) {
-      const user = allowedUsers[email];
+    for (const user of users || []) {
+      if (!user.facialVerificationImageUrl) continue;
+
       try {
         const result = await facialVerification({
           capturedImageUri,
           referenceImageUrl: user.facialVerificationImageUrl
         });
-        if (result.isMatch) {
+
+        if (result.isMatch && result.confidence > 0.8) {
           setStep('success');
           sessionStorage.setItem('isVerified', 'true');
-          toast({ title: 'Facial Verification Successful!', description: `Welcome, ${email}. Redirecting...` });
+          toast({ title: 'Facial Verification Successful!', description: `Welcome, ${user.name}. Redirecting...` });
           setTimeout(() => router.push('/login'), 1500);
           matched = true;
           break;
@@ -272,8 +283,8 @@ export default function VerifyPage() {
                             {hasCameraPermission !== true && <Camera className="h-12 w-12 text-muted-foreground" />}
                          </div>
                           {errorMessage && <p className="text-sm text-destructive text-center">{errorMessage}</p>}
-                         <Button onClick={handleFacialVerification} className="w-full" disabled={isLoading || hasCameraPermission !== true}>
-                           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
+                         <Button onClick={handleFacialVerification} className="w-full" disabled={isLoading || hasCameraPermission !== true || usersLoading}>
+                           {isLoading || usersLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
                            Verify My Identity
                          </Button>
                        </div>
