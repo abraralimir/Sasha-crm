@@ -1,7 +1,7 @@
-import {createApiHandlerV1} from '@genkit-ai/next';
+import {createApiHandler} from '@genkit-ai/next';
 import '@/ai';
 
 export const runtime = 'nodejs';
 
-export const GET = createApiHandlerV1();
-export const POST = createApiHandlerV1();
+export const GET = createApiHandler();
+export const POST = createApiHandler();
