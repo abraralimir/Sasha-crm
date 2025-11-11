@@ -25,6 +25,7 @@ const allowedUsers: Record<string, { code: string; }> = {
   'alimirabrar@gmail.com': { code: '0012' },
   'saleem@bitstek.io': { code: '0776' },
   'adil@bitstek.io': { code: '0779' },
+  'ismail@sbm.com': { code: '0071' },
 };
 
 const MAX_ATTEMPTS = 5;
@@ -193,6 +194,7 @@ export default function VerifyPage() {
     const context = canvas.getContext('2d');
     if (!context) {
         setIsLoading(false);
+        stopCamera();
         return;
     }
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -344,4 +346,3 @@ export default function VerifyPage() {
     </>
   );
 }
-
