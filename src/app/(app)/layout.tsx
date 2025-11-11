@@ -6,8 +6,6 @@ import { Header } from '@/components/layout/header';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { useUser } from '@/firebase';
 import { Loader2 } from 'lucide-react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 import { usePresence } from '@/hooks/use-presence';
 
 function AppContent({ children }: { children: React.ReactNode }) {
@@ -45,9 +43,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
       <div className="dark">
-        <DndProvider backend={HTML5Backend}>
-          <AppContent>{children}</AppContent>
-        </DndProvider>
+        <AppContent>{children}</AppContent>
       </div>
   );
 }
