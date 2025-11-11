@@ -9,5 +9,3 @@ import './flows/predict-lead-roi.ts';
 import './flows/assess-lead-risk.ts';
 import './flows/analyze-financials.ts';
 import './flows/facial-verification.ts';
-
-import { genkit } from 'genkit';
