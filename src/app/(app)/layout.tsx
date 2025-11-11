@@ -32,7 +32,6 @@ function AppContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
       <SidebarProvider>
         <SidebarNav />
         <SidebarInset>
@@ -40,14 +39,15 @@ function AppContent({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-4 sm:p-6 md:p-8">{children}</main>
         </SidebarInset>
       </SidebarProvider>
-    </DndProvider>
   );
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
       <div className="dark">
-        <AppContent>{children}</AppContent>
+        <DndProvider backend={HTML5Backend}>
+          <AppContent>{children}</AppContent>
+        </DndProvider>
       </div>
   );
 }
