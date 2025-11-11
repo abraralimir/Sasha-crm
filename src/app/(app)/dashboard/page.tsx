@@ -9,15 +9,38 @@ import { AddLeadForm } from '@/components/dashboard/add-lead-form';
 import { RegisteredUsers } from '@/components/dashboard/registered-users';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { DollarSign, Users, ListChecks, Layers } from 'lucide-react';
-import type { Lead, Task, Project } from '@/lib/types';
+import type { Lead, Task, Project, FinancialEntry } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { subDays } from 'date-fns';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { getExchangeRates } from '@/lib/currency';
+import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
 
 type LeadWithId = Lead & { id: string; lastContacted: Timestamp };
+type FinancialEntryWithId = FinancialEntry & { id: string };
 
 export default function DashboardPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const [exchangeRates, setExchangeRates] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchRates() {
+      try {
+        const rates = await getExchangeRates('USD');
+        setExchangeRates(rates);
+      } catch (error) {
+        console.error("Failed to fetch exchange rates:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not load currency exchange rates. Totals may be inaccurate.",
+        });
+      }
+    }
+    fetchRates();
+  }, [toast]);
 
   const leadsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -37,12 +60,23 @@ export default function DashboardPage() {
   }, [firestore]);
   const { data: projects, isLoading: projectsLoading } = useCollection<Project>(projectsCollection);
 
+  const financialsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'financials');
+  }, [firestore]);
+  const { data: financials, isLoading: financialsLoading } = useCollection<FinancialEntryWithId>(financialsCollection);
+
   const kpis = useMemo(() => {
     const oneMonthAgo = subDays(new Date(), 30);
+    
+    const convertToUsd = (amount: number, currency: 'USD' | 'AED' | 'INR') => {
+      if (!exchangeRates || currency === 'USD') return amount;
+      return amount / (exchangeRates[currency] || 1);
+    };
 
-    const totalRevenue = leads
-      ?.filter(lead => lead.status === 'Closed' && lead.potentialRevenue)
-      .reduce((acc, lead) => acc + (lead.potentialRevenue || 0), 0) || 0;
+    const totalRevenue = financials
+      ?.filter(f => f.type === 'Income')
+      .reduce((acc, curr) => acc + convertToUsd(curr.amount, curr.currency), 0) || 0;
 
     const newLeadsCount = leads
       ?.filter(lead => lead.lastContacted?.toDate() > oneMonthAgo)
@@ -78,9 +112,9 @@ export default function DashboardPage() {
         icon: <Layers className="text-purple-500" />,
       },
     ];
-  }, [leads, tasks, projects]);
+  }, [leads, tasks, projects, financials, exchangeRates]);
 
-  const isLoading = leadsLoading || tasksLoading || projectsLoading;
+  const isLoading = leadsLoading || tasksLoading || projectsLoading || financialsLoading || !exchangeRates;
 
   return (
     <div className="space-y-8">
