@@ -36,6 +36,8 @@ export type UserProfile = {
     email: string;
     profilePictureUrl?: string;
     facialVerificationImageUrl?: string;
+    jobTitle?: string;
+    department?: string;
 };
 
 export type Notification = {
@@ -122,16 +124,16 @@ export type PolicyDocument = {
 };
 
 export type ChatMessage = {
-    id: string;
-    groupId: string;
-    type: 'text' | 'file';
-    text?: string;
-    fileName?: string;
-    fileUrl?: string;
-    userId: string;
-    userName: string;
-    userAvatar: string | null;
-    timestamp: Timestamp;
+  id: string;
+  groupId: string;
+  type: 'text' | 'file';
+  text: string;
+  fileName?: string;
+  fileUrl?: string;
+  userId: string;
+  userName: string;
+  userAvatar: string | null;
+  timestamp: Timestamp;
 };
 
 export type ChatGroup = {
