@@ -2,7 +2,11 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserNav } from "@/components/layout/user-nav";
 import { PlatformAiChat } from "../platform-ai-chat";
 import { NotificationBell } from "./notification-bell";
-import { LiveClock } from "./live-clock";
+import dynamic from 'next/dynamic';
+
+const LiveClock = dynamic(() => import('./live-clock').then(mod => mod.LiveClock), {
+  ssr: false,
+});
 
 
 export function Header() {
