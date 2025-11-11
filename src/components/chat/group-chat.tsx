@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Timestamp } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, ChatGroup } from '@/lib/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +36,7 @@ type ChatMessage = {
   timestamp: Timestamp;
 };
 
-export function GroupChat() {
+export function GroupChat({ groupId }: { groupId: string }) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -48,10 +48,29 @@ export function GroupChat() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const groupQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'groups', groupId);
+  }, [firestore, groupId]);
+  // Not using useDoc as we don't need it to be reactive for now
+  const [group, setGroup] = useState<ChatGroup | null>(null);
+
+  useEffect(() => {
+    async function fetchGroup() {
+        if (!groupQuery) return;
+        const groupDoc = await getDoc(groupQuery);
+        if (groupDoc.exists()) {
+            setGroup({ id: groupDoc.id, ...groupDoc.data() } as ChatGroup);
+        }
+    }
+    fetchGroup();
+  }, [groupQuery]);
+
+
   const messagesCollection = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'messages');
-  }, [firestore]);
+    return collection(firestore, `groups/${groupId}/messages`);
+  }, [firestore, groupId]);
 
   const messagesQuery = useMemoFirebase(() => {
     if (!messagesCollection) return null;
@@ -76,22 +95,18 @@ export function GroupChat() {
   };
   
   const createNotificationsForOtherUsers = async (messageText: string) => {
-    if (!firestore || !user) return;
+    if (!firestore || !user || !group) return;
   
     try {
-      const usersSnapshot = await getDocs(collection(firestore, 'users'));
-      const otherUsers = usersSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as UserProfile))
-        .filter(u => u.id !== user.uid);
-  
+      const otherMembers = group.members.filter(m => m !== user.uid);
       const batch = writeBatch(firestore);
   
-      otherUsers.forEach(otherUser => {
-        const notificationRef = doc(collection(firestore, 'users', otherUser.id, 'notifications'));
+      otherMembers.forEach(otherUserId => {
+        const notificationRef = doc(collection(firestore, 'users', otherUserId, 'notifications'));
         const notificationPayload = {
-          title: `New message from ${user.displayName}`,
-          message: messageText.substring(0, 50) + (messageText.length > 50 ? '...' : ''),
-          link: '/chat',
+          title: `New message in ${group.name}`,
+          message: `${user.displayName}: ${messageText.substring(0, 30)}...`,
+          link: `/chat/${groupId}`,
           read: false,
           createdAt: serverTimestamp(),
         };
@@ -143,6 +158,7 @@ export function GroupChat() {
       userName: user.displayName || 'Anonymous User',
       userAvatar: user.photoURL || null,
       timestamp: serverTimestamp(),
+      groupId,
     });
   };
 
@@ -157,7 +173,8 @@ export function GroupChat() {
             userId: user.uid,
             userName: user.displayName || 'Anonymous User',
             userAvatar: user.photoURL || null,
-            timestamp: serverTimestamp()
+            timestamp: serverTimestamp(),
+            groupId,
         });
         toast({
             title: "File attached",
@@ -208,7 +225,7 @@ export function GroupChat() {
     <>
       <Card className="h-full flex flex-col">
         <CardHeader>
-          <h3 className="text-lg font-semibold">Team Collaboration Chat</h3>
+          <h3 className="text-lg font-semibold">{group?.name || 'Group Chat'}</h3>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden">
           <ScrollArea className="h-full" ref={scrollAreaRef}>
@@ -220,7 +237,7 @@ export function GroupChat() {
               )}
               {!messagesLoading && messages && messages.length === 0 && (
                 <div className="text-center text-muted-foreground p-8">
-                  <p>No messages yet. Be the first to start a conversation!</p>
+                  <p>No messages yet. Be the first to start the conversation!</p>
                 </div>
               )}
               {messages?.map((message) => (

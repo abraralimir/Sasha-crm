@@ -25,9 +25,9 @@
           "format": "uri"
         },
         "facialVerificationImageUrl": {
-            "type": "string",
-            "description": "URL to the user's trusted reference photo for facial verification.",
-            "format": "uri"
+          "type": "string",
+          "description": "URL to the user's trusted reference photo for facial verification.",
+          "format": "uri"
         },
         "jobTitle": {
           "type": "string",
@@ -48,14 +48,53 @@
         "name"
       ]
     },
-    "ChatMessage": {
-      "title": "Chat Message",
-      "description": "Represents a single message in the group chat.",
+    "ChatGroup": {
+      "title": "Chat Group",
+      "description": "Represents a chat group.",
       "type": "object",
       "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the group."
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of user IDs who are members of this group."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "User ID of the group creator."
+        },
+        "createdAt": {
+          "type": "object",
+          "description": "The server timestamp when the group was created."
+        }
+      },
+      "required": [
+        "name",
+        "members",
+        "createdBy",
+        "createdAt"
+      ]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "Represents a single message within a chat group.",
+      "type": "object",
+      "properties": {
+        "groupId": {
+          "type": "string",
+          "description": "The ID of the group this message belongs to."
+        },
         "type": {
           "type": "string",
-          "enum": ["text", "file"],
+          "enum": [
+            "text",
+            "file"
+          ],
           "description": "The type of message."
         },
         "text": {
@@ -67,9 +106,9 @@
           "description": "The name of the shared file."
         },
         "fileUrl": {
-            "type": "string",
-            "format": "uri",
-            "description": "The URL of the shared file in cloud storage."
+          "type": "string",
+          "format": "uri",
+          "description": "The URL of the shared file in cloud storage."
         },
         "userId": {
           "type": "string",
@@ -89,8 +128,8 @@
         }
       },
       "required": [
+        "groupId",
         "type",
-        "text",
         "userId",
         "userName",
         "timestamp"
@@ -101,144 +140,359 @@
       "description": "Represents a potential customer or deal.",
       "type": "object",
       "properties": {
-        "contactName": { "type": "string" },
-        "companyName": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "status": { "type": "string", "enum": ["New", "Contacted", "Proposal", "Closed", "Lost"] },
-        "potentialRevenue": { "type": "number" },
-        "lastContacted": { "type": "string", "format": "date-time" }
+        "contactName": {
+          "type": "string"
+        },
+        "companyName": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "New",
+            "Contacted",
+            "Proposal",
+            "Closed",
+            "Lost"
+          ]
+        },
+        "potentialRevenue": {
+          "type": "number"
+        },
+        "lastContacted": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["contactName", "companyName", "email", "status"]
+      "required": [
+        "contactName",
+        "companyName",
+        "email",
+        "status"
+      ]
     },
     "Task": {
       "title": "Task",
       "description": "Represents a single task or ticket for internal teams.",
       "type": "object",
       "properties": {
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "status": { "type": "string", "enum": ["To Do", "In Progress", "Done"] },
-        "assigneeId": { "type": "string" },
-        "assigneeName": { "type": "string" },
-        "assigneeAvatar": { "type": "string", "format": "uri" },
-        "createdAt": { "type": "object" },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "To Do",
+            "In Progress",
+            "Done"
+          ]
+        },
+        "assigneeId": {
+          "type": "string"
+        },
+        "assigneeName": {
+          "type": "string"
+        },
+        "assigneeAvatar": {
+          "type": "string",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "object"
+        },
         "department": {
-            "type": "string",
-            "description": "The department the user belongs to."
+          "type": "string",
+          "description": "The department the user belongs to."
         },
         "jobTitle": {
-            "type": "string",
-            "description": "The user's job title."
+          "type": "string",
+          "description": "The user's job title."
         }
       },
-      "required": ["title", "status", "createdAt"]
+      "required": [
+        "title",
+        "status",
+        "createdAt"
+      ]
     },
-     "ProjectTask": {
+    "ProjectTask": {
       "title": "Project Task",
       "description": "Represents a single task within a project.",
       "type": "object",
       "properties": {
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "status": { "type": "string", "enum": ["To Do", "In Progress", "Done"] },
-        "assigneeId": { "type": "string" },
-        "assigneeName": { "type": "string" },
-        "assigneeAvatar": { "type": "string", "format": "uri" },
-        "createdAt": { "type": "object" }
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "To Do",
+            "In Progress",
+            "Done"
+          ]
+        },
+        "assigneeId": {
+          "type": "string"
+        },
+        "assigneeName": {
+          "type": "string"
+        },
+        "assigneeAvatar": {
+          "type": "string",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "object"
+        }
       },
-      "required": ["title", "status", "createdAt"]
+      "required": [
+        "title",
+        "status",
+        "createdAt"
+      ]
     },
     "Project": {
       "title": "Project",
       "description": "Represents a single project.",
       "type": "object",
       "properties": {
-        "projectName": { "type": "string" },
-        "slug": { "type": "string", "description": "URL-friendly version of the project name." },
-        "clientName": { "type": "string" },
-        "description": { "type": "string" },
-        "startDate": { "type": "object" },
-        "endDate": { "type": "object" },
-        "status": { "type": "string", "enum": ["Not Started", "In Progress", "Completed", "On Hold"] },
-        "budget": { "type": "number" },
-        "team": { "type": "array", "items": { "type": "string" }, "description": "Array of user IDs." },
-        "aiGeneratedPlan": { 
+        "projectName": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string",
+          "description": "URL-friendly version of the project name."
+        },
+        "clientName": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "startDate": {
+          "type": "object"
+        },
+        "endDate": {
+          "type": "object"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Not Started",
+            "In Progress",
+            "Completed",
+            "On Hold"
+          ]
+        },
+        "budget": {
+          "type": "number"
+        },
+        "team": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of user IDs."
+        },
+        "aiGeneratedPlan": {
           "type": "object",
           "description": "The AI-generated project plan."
         }
       },
-      "required": ["projectName", "slug", "clientName", "status", "startDate", "endDate"]
+      "required": [
+        "projectName",
+        "slug",
+        "clientName",
+        "status",
+        "startDate",
+        "endDate"
+      ]
     },
     "Notification": {
-        "title": "Notification",
-        "description": "Represents a notification for a user.",
-        "type": "object",
-        "properties": {
-            "title": { "type": "string" },
-            "message": { "type": "string" },
-            "link": { "type": "string", "format": "uri-relative" },
-            "read": { "type": "boolean" },
-            "createdAt": { "type": "object" }
+      "title": "Notification",
+      "description": "Represents a notification for a user.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
         },
-        "required": ["title", "message", "link", "read", "createdAt"]
+        "message": {
+          "type": "string"
+        },
+        "link": {
+          "type": "string",
+          "format": "uri-relative"
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "title",
+        "message",
+        "link",
+        "read",
+        "createdAt"
+      ]
     },
     "FinancialEntry": {
-        "title": "Financial Entry",
-        "description": "Represents a single financial entry (income, expense, or investment).",
-        "type": "object",
-        "properties": {
-            "description": { "type": "string" },
-            "amount": { "type": "number" },
-            "type": { "type": "string", "enum": ["Income", "Expense", "Investment"] },
-            "category": { "type": "string" },
-            "date": { "type": "object" },
-            "currency": {
-              "type": "string",
-              "enum": ["USD", "AED", "INR"],
-              "description": "The currency of the financial entry."
-            },
-            "notes": { "type": "string" }
+      "title": "Financial Entry",
+      "description": "Represents a single financial entry (income, expense, or investment).",
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
         },
-        "required": ["description", "amount", "type", "category", "date", "currency"]
+        "amount": {
+          "type": "number"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Income",
+            "Expense",
+            "Investment"
+          ]
+        },
+        "category": {
+          "type": "string"
+        },
+        "date": {
+          "type": "object"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "USD",
+            "AED",
+            "INR"
+          ],
+          "description": "The currency of the financial entry."
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "amount",
+        "type",
+        "category",
+        "date",
+        "currency"
+      ]
     },
     "AttendanceLog": {
       "title": "Attendance Log",
       "description": "Represents a single check-in, check-out, or break event for a user.",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
-        "type": { "type": "string", "enum": ["check-in", "check-out", "break-start", "break-end"] },
-        "timestamp": { "type": "object" }
+        "userId": {
+          "type": "string"
+        },
+        "userName": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "check-in",
+            "check-out",
+            "break-start",
+            "break-end"
+          ]
+        },
+        "timestamp": {
+          "type": "object"
+        }
       },
-      "required": ["userId", "userName", "type", "timestamp"]
+      "required": [
+        "userId",
+        "userName",
+        "type",
+        "timestamp"
+      ]
     },
     "UserStatus": {
       "title": "User Status",
       "description": "Represents the real-time presence status of a user.",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
-        "userAvatar": { "type": "string", "format": "uri" },
-        "status": { "type": "string", "enum": ["active", "away", "on-break", "offline"] },
-        "lastSeen": { "type": "object" }
+        "userId": {
+          "type": "string"
+        },
+        "userName": {
+          "type": "string"
+        },
+        "userAvatar": {
+          "type": "string",
+          "format": "uri"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "away",
+            "on-break",
+            "offline"
+          ]
+        },
+        "lastSeen": {
+          "type": "object"
+        }
       },
-      "required": ["userId", "userName", "status", "lastSeen"]
+      "required": [
+        "userId",
+        "userName",
+        "status",
+        "lastSeen"
+      ]
     },
     "PolicyDocument": {
-        "title": "Policy Document",
-        "description": "Represents an official company policy or document.",
-        "type": "object",
-        "properties": {
-            "title": { "type": "string" },
-            "category": { "type": "string" },
-            "fileUrl": { "type": "string", "format": "uri" },
-            "fileName": { "type": "string" },
-            "version": { "type": "string" },
-            "createdAt": { "type": "object" }
+      "title": "Policy Document",
+      "description": "Represents an official company policy or document.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
         },
-        "required": ["title", "category", "fileUrl", "fileName", "createdAt"]
+        "category": {
+          "type": "string"
+        },
+        "fileUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "fileName": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "title",
+        "category",
+        "fileUrl",
+        "fileName",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -249,48 +503,76 @@
   },
   "firestore": {
     "/users/{userId}": {
-      "schema": { "$ref": "#/entities/User" },
+      "schema": {
+        "$ref": "#/entities/User"
+      },
       "description": "Stores user profiles. Secured by user ID. Each user can only access their own profile."
     },
-    "/messages/{messageId}": {
-      "schema": { "$ref": "#/entities/ChatMessage" },
-      "description": "Stores all group chat messages. All authenticated users can read and create messages."
+    "/groups/{groupId}": {
+      "schema": {
+        "$ref": "#/entities/ChatGroup"
+      },
+      "description": "Stores information about chat groups."
+    },
+    "/groups/{groupId}/messages/{messageId}": {
+      "schema": {
+        "$ref": "#/entities/ChatMessage"
+      },
+      "description": "Stores messages for a specific chat group. Only group members can read/write."
     },
     "/leads/{leadId}": {
-        "schema": { "$ref": "#/entities/Lead" },
-        "description": "Stores lead information. All authenticated users can manage leads."
+      "schema": {
+        "$ref": "#/entities/Lead"
+      },
+      "description": "Stores lead information. All authenticated users can manage leads."
     },
     "/tasks/{taskId}": {
-        "schema": { "$ref": "#/entities/Task" },
-        "description": "Stores general team tasks. All authenticated users can manage tasks."
+      "schema": {
+        "$ref": "#/entities/Task"
+      },
+      "description": "Stores general team tasks. All authenticated users can manage tasks."
     },
-     "/projects/{projectId}": {
-      "schema": { "$ref": "#/entities/Project" },
+    "/projects/{projectId}": {
+      "schema": {
+        "$ref": "#/entities/Project"
+      },
       "description": "Stores project information. All authenticated users can manage projects."
     },
     "/projects/{projectId}/tasks/{taskId}": {
-      "schema": { "$ref": "#/entities/ProjectTask" },
+      "schema": {
+        "$ref": "#/entities/ProjectTask"
+      },
       "description": "Stores tasks for a specific project. All authenticated users can manage project tasks."
     },
     "/financials/{financialEntryId}": {
-        "schema": { "$ref": "#/entities/FinancialEntry" },
-        "description": "Stores financial entries. All authenticated users can manage financials."
+      "schema": {
+        "$ref": "#/entities/FinancialEntry"
+      },
+      "description": "Stores financial entries. All authenticated users can manage financials."
     },
     "/users/{userId}/notifications/{notificationId}": {
-        "schema": { "$ref": "#/entities/Notification" },
-        "description": "Stores notifications for a specific user. Users can only access their own notifications."
+      "schema": {
+        "$ref": "#/entities/Notification"
+      },
+      "description": "Stores notifications for a specific user. Users can only access their own notifications."
     },
     "/attendance/{logId}": {
-      "schema": { "$ref": "#/entities/AttendanceLog" },
+      "schema": {
+        "$ref": "#/entities/AttendanceLog"
+      },
       "description": "Stores user attendance events. Users can create their own logs."
     },
     "/userStatus/{userId}": {
-      "schema": { "$ref": "#/entities/UserStatus" },
+      "schema": {
+        "$ref": "#/entities/UserStatus"
+      },
       "description": "Stores the real-time presence of users. Users can only update their own status."
     },
     "/policyDocuments/{docId}": {
-        "schema": { "$ref": "#/entities/PolicyDocument" },
-        "description": "Stores company policies and documents. All authenticated users can read. (Write access should be restricted)."
+      "schema": {
+        "$ref": "#/entities/PolicyDocument"
+      },
+      "description": "Stores company policies and documents. All authenticated users can read. (Write access should be restricted)."
     }
   }
 }

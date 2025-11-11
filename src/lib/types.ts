@@ -120,3 +120,24 @@ export type PolicyDocument = {
     version: string;
     createdAt: Timestamp;
 };
+
+export type ChatMessage = {
+    id: string;
+    groupId: string;
+    type: 'text' | 'file';
+    text?: string;
+    fileName?: string;
+    fileUrl?: string;
+    userId: string;
+    userName: string;
+    userAvatar: string | null;
+    timestamp: Timestamp;
+};
+
+export type ChatGroup = {
+    id: string;
+    name: string;
+    members: string[]; // array of user IDs
+    createdBy: string; // user ID
+    createdAt: Timestamp;
+};
