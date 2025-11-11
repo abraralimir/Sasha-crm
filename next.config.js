@@ -36,10 +36,6 @@ const nextConfig = {
       }
     ],
   },
-   env: {
-    NEXT_PUBLIC_VIDEOSDK_TOKEN: process.env.NEXT_PUBLIC_VIDEOSDK_TOKEN,
-    NEXT_PUBLIC_VIDEOSDK_API_KEY: process.env.NEXT_PUBLIC_VIDEOSDK_API_KEY,
-  }
 };
 
 module.exports = nextConfig;
