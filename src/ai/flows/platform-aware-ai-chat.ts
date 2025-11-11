@@ -35,6 +35,7 @@ export async function platformAwareAIChat(input: PlatformAwareAIChatInput): Prom
 
 const prompt = ai.definePrompt({
   name: 'platformAwareAIChatPrompt',
+  model: 'googleai/gemini-pro',
   input: {schema: z.object({
     userId: z.string(),
     leadsJson: z.string(),
