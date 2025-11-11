@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -502,6 +503,12 @@
     ]
   },
   "firestore": {
+    "/messages/{messageId}": {
+      "schema": {
+        "$ref": "#/entities/ChatMessage"
+      },
+      "description": "Stores all general chat messages. All authenticated users can read/write."
+    },
     "/users/{userId}": {
       "schema": {
         "$ref": "#/entities/User"

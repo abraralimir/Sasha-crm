@@ -11,19 +11,14 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CreateGroupForm } from './create-group-form';
-import { Loader2, PlusCircle, Users } from 'lucide-react';
+import { Loader2, PlusCircle, Users, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
-const getInitials = (name?: string | null) => {
-  if (!name) return 'U';
-  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-};
-
-export function ChatSidebar() {
+export function ChatSidebar({ onSelectGroup }: { onSelectGroup: (groupId: string) => void }) {
   const firestore = useFirestore();
   const { user } = useUser();
-  const params = useParams();
+  const [selectedGroup, setSelectedGroup] = useState('main');
   const [isCreateGroupOpen, setCreateGroupOpen] = useState(false);
 
   const groupsQuery = useMemoFirebase(() => {
@@ -35,6 +30,11 @@ export function ChatSidebar() {
   }, [firestore, user]);
 
   const { data: groups, isLoading } = useCollection<ChatGroup>(groupsQuery);
+
+  const handleGroupSelect = (groupId: string) => {
+    setSelectedGroup(groupId);
+    onSelectGroup(groupId);
+  };
 
   return (
     <div className="w-64 border-r flex flex-col">
@@ -62,22 +62,36 @@ export function ChatSidebar() {
           </div>
         ) : (
           <div className="p-2 space-y-1">
-            {groups?.map((group) => (
-              <Link href={`/chat/${group.id}`} key={group.id}>
-                <div
-                  className={cn(
-                    'flex items-center gap-3 p-2 rounded-md transition-colors',
-                    params.groupId === group.id
-                      ? 'bg-secondary font-semibold'
-                      : 'hover:bg-secondary/50'
-                  )}
+             <div
+                onClick={() => handleGroupSelect('main')}
+                className={cn(
+                    'flex items-center gap-3 p-2 rounded-md transition-colors cursor-pointer',
+                    selectedGroup === 'main'
+                    ? 'bg-secondary font-semibold'
+                    : 'hover:bg-secondary/50'
+                )}
                 >
-                  <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-sm">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <span className="flex-1 truncate">{group.name}</span>
+                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-sm">
+                    <MessageSquare className="h-5 w-5" />
                 </div>
-              </Link>
+                <span className="flex-1 truncate">General Chat</span>
+            </div>
+            {groups?.map((group) => (
+              <div
+                key={group.id}
+                onClick={() => handleGroupSelect(group.id)}
+                className={cn(
+                  'flex items-center gap-3 p-2 rounded-md transition-colors cursor-pointer',
+                  selectedGroup === group.id
+                    ? 'bg-secondary font-semibold'
+                    : 'hover:bg-secondary/50'
+                )}
+              >
+                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-sm">
+                  <Users className="h-5 w-5" />
+                </div>
+                <span className="flex-1 truncate">{group.name}</span>
+              </div>
             ))}
           </div>
         )}

@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Loader2, Send, Paperclip, Sparkles, EllipsisVertical, File, ListPlus } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, serverTimestamp, query, orderBy, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, query, orderBy, getDoc, writeBatch, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Timestamp } from 'firebase/firestore';
-import type { UserProfile, ChatGroup } from '@/lib/types';
+import type { UserProfile, ChatGroup, ChatMessage } from '@/lib/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,18 +23,8 @@ import {
 import { AddTaskForm } from '../dashboard/add-task-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { enableAIChatWithFileContext } from '@/ai/flows/ai-chat-with-file-context';
-import { addDocumentNonBlocking } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
-type ChatMessage = {
-  id: string;
-  type: 'text' | 'file';
-  text: string;
-  fileName?: string;
-  userId: string;
-  userName: string;
-  userAvatar: string | null;
-  timestamp: Timestamp;
-};
 
 export function GroupChat({ groupId }: { groupId: string }) {
   const [input, setInput] = useState('');
@@ -42,35 +32,21 @@ export function GroupChat({ groupId }: { groupId: string }) {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [openCreateTicketDialog, setOpenCreateTicketDialog] = useState(false);
   const [ticketMessage, setTicketMessage] = useState<ChatMessage | null>(null);
+  const [group, setGroup] = useState<ChatGroup | null>(null);
   
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const groupQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return doc(firestore, 'groups', groupId);
-  }, [firestore, groupId]);
-  // Not using useDoc as we don't need it to be reactive for now
-  const [group, setGroup] = useState<ChatGroup | null>(null);
-
-  useEffect(() => {
-    async function fetchGroup() {
-        if (!groupQuery) return;
-        const groupDoc = await getDoc(groupQuery);
-        if (groupDoc.exists()) {
-            setGroup({ id: groupDoc.id, ...groupDoc.data() } as ChatGroup);
-        }
-    }
-    fetchGroup();
-  }, [groupQuery]);
-
+  const messagesCollectionPath = useMemo(() => {
+    return groupId === 'main' ? 'messages' : `groups/${groupId}/messages`;
+  }, [groupId]);
 
   const messagesCollection = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, `groups/${groupId}/messages`);
-  }, [firestore, groupId]);
+    return collection(firestore, messagesCollectionPath);
+  }, [firestore, messagesCollectionPath]);
 
   const messagesQuery = useMemoFirebase(() => {
     if (!messagesCollection) return null;
@@ -78,6 +54,21 @@ export function GroupChat({ groupId }: { groupId: string }) {
   }, [messagesCollection]);
 
   const { data: messages, isLoading: messagesLoading } = useCollection<ChatMessage>(messagesQuery);
+  
+  useEffect(() => {
+    async function fetchGroup() {
+        if (!firestore || groupId === 'main') {
+            setGroup(null);
+            return;
+        };
+        const groupDocRef = doc(firestore, 'groups', groupId);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()) {
+            setGroup({ id: groupDoc.id, ...groupDoc.data() } as ChatGroup);
+        }
+    }
+    fetchGroup();
+  }, [firestore, groupId]);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -106,7 +97,7 @@ export function GroupChat({ groupId }: { groupId: string }) {
         const notificationPayload = {
           title: `New message in ${group.name}`,
           message: `${user.displayName}: ${messageText.substring(0, 30)}...`,
-          link: `/chat/${groupId}`,
+          link: `/chat`,
           read: false,
           createdAt: serverTimestamp(),
         };
@@ -119,16 +110,20 @@ export function GroupChat({ groupId }: { groupId: string }) {
     }
   };
 
-  const sendMessage = (messagePayload: Omit<ChatMessage, 'id' | 'timestamp'> & { timestamp: any }) => {
+  const sendMessage = (messagePayload: Omit<ChatMessage, 'id' | 'timestamp' | 'groupId'> & { timestamp: any }) => {
     if (!messagesCollection) return;
     setIsLoading(true);
 
-    addDocumentNonBlocking(messagesCollection, messagePayload)
+    const payloadWithGroup = { ...messagePayload, groupId };
+
+    addDoc(messagesCollection, payloadWithGroup)
       .then(() => {
-          if (messagePayload.type === 'text') {
-            createNotificationsForOtherUsers(messagePayload.text);
-          } else if (messagePayload.fileName) {
-            createNotificationsForOtherUsers(`File: ${messagePayload.fileName}`);
+          if (group) { // Only send notifications for specific groups, not main chat
+            if (messagePayload.type === 'text') {
+              createNotificationsForOtherUsers(messagePayload.text);
+            } else if (messagePayload.fileName) {
+              createNotificationsForOtherUsers(`File: ${messagePayload.fileName}`);
+            }
           }
       })
       .catch((error) => {
@@ -158,7 +153,6 @@ export function GroupChat({ groupId }: { groupId: string }) {
       userName: user.displayName || 'Anonymous User',
       userAvatar: user.photoURL || null,
       timestamp: serverTimestamp(),
-      groupId,
     });
   };
 
@@ -174,7 +168,6 @@ export function GroupChat({ groupId }: { groupId: string }) {
             userName: user.displayName || 'Anonymous User',
             userAvatar: user.photoURL || null,
             timestamp: serverTimestamp(),
-            groupId,
         });
         toast({
             title: "File attached",
@@ -225,7 +218,7 @@ export function GroupChat({ groupId }: { groupId: string }) {
     <>
       <Card className="h-full flex flex-col">
         <CardHeader>
-          <h3 className="text-lg font-semibold">{group?.name || 'Group Chat'}</h3>
+          <h3 className="text-lg font-semibold">{group?.name || 'General Chat'}</h3>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden">
           <ScrollArea className="h-full" ref={scrollAreaRef}>
