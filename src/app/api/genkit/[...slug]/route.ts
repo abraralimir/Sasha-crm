@@ -1,6 +1,5 @@
-'use client';
-import {createApiHandler} from '@genkit-ai/next';
+import {createApiHandlerV1} from '@genkit-ai/next';
 import '@/ai';
 
-export const GET = createApiHandler();
-export const POST = createApiHandler();
+export const GET = createApiHandlerV1();
+export const POST = createApiHandlerV1();
