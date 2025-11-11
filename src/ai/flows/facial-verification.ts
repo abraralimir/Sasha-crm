@@ -3,13 +3,13 @@
 /**
  * @fileOverview An AI agent for performing facial recognition verification.
  *
- * - facialVerification - A function that compares two images to verify a user's identity.
+ * - facialVerification - a function that compares two images to verify a user's identity.
  * - FacialVerificationInput - The input type for the facialVerification function.
  * - FacialVerificationOutput - The return type for the facialVerification function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const FacialVerificationInputSchema = z.object({
   capturedImageUri: z
