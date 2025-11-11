@@ -1,4 +1,4 @@
-import {createApiHandler} from '@genkit-ai/nextjs';
+import {createApiHandler} from '@genkit-ai/next';
 import '@/ai';
 
 export const runtime = 'nodejs';
