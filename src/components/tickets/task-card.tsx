@@ -1,5 +1,4 @@
 'use client';
-import { useDrag } from 'react-dnd';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -30,14 +29,6 @@ const getInitials = (name?: string | null) => {
 };
 
 export function TaskCard({ task, onDelete }: TaskCardProps) {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'TASK',
-    item: { id: task.id },
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-  }));
-
   const handleSelect = () => {
     onDelete(task.id);
   };
@@ -46,8 +37,7 @@ export function TaskCard({ task, onDelete }: TaskCardProps) {
     <ContextMenu>
       <ContextMenuTrigger>
         <Card
-          ref={drag}
-          className={`mb-4 cursor-grab ${isDragging ? 'opacity-50' : 'opacity-100'}`}
+          className="mb-4"
         >
           <CardHeader className="pb-2">
             <CardTitle className="text-base">{task.title}</CardTitle>

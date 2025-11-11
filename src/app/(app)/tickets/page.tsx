@@ -1,8 +1,6 @@
 
 'use client';
 import { useState } from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 import { collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Loader2, Trash2, AlertTriangle, PlusCircle } from 'lucide-react';
