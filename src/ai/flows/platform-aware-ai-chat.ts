@@ -9,8 +9,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { getExchangeRates } from '@/lib/currency';
-import type { FinancialEntry } from '@/lib/types';
 import {z} from 'genkit';
 
 const PlatformAwareAIChatInputSchema = z.object({
@@ -19,7 +17,7 @@ const PlatformAwareAIChatInputSchema = z.object({
   leadsJson: z.string().describe('A JSON string representing all the leads in the system.'),
   tasksJson: z.string().describe('A JSON string representing all the tasks/tickets in the system.'),
   usersJson: z.string().describe('A JSON string representing all the users in the system.'),
-  financialsJson: z.string().describe('A JSON string representing all financial entries in the system.'),
+  financialsJson: z.string().describe('A JSON string representing all financial entries in the system (may be in multiple currencies like USD, AED, INR).'),
   attendanceJson: z.string().describe('A JSON string representing all attendance log entries for the current day.'),
 });
 export type PlatformAwareAIChatInput = z.infer<typeof PlatformAwareAIChatInputSchema>;
@@ -35,28 +33,20 @@ export async function platformAwareAIChat(input: PlatformAwareAIChatInput): Prom
 
 const prompt = ai.definePrompt({
   name: 'platformAwareAIChatPrompt',
-  model: 'googleai/gemini-pro',
-  input: {schema: z.object({
-    userId: z.string(),
-    leadsJson: z.string(),
-    tasksJson: z.string(),
-    usersJson: z.string(),
-    financialsJson: z.string(),
-    attendanceJson: z.string(),
-    query: z.string(),
-  })},
+  input: {schema: PlatformAwareAIChatInputSchema},
   output: {schema: PlatformAwareAIChatOutputSchema},
   prompt: `You are Sasha AI, a smart, friendly, and helpful assistant for this CRM platform. Your personality is positive, a little playful, and you love using emojis to make your responses engaging! 😉
 
 Your goal is to provide clear, conversational, and actionable answers based on the real-time data provided to you. Do NOT just dump data. Synthesize it, explain it in a human-friendly way, and present it clearly. Avoid using raw data formatting like asterisks or hashes for lists; use natural language instead.
 
 Your current user's ID is {{userId}}.
-You have been provided with the full dataset for leads, tasks, users, financials, and today's attendance as JSON data. All financial data has been converted to USD for consistency. Use this data as your ONLY source of truth to answer any questions.
+You have been provided with the full dataset for leads, tasks, users, financials, and today's attendance as JSON data.
+Financials may be in different currencies (USD, AED, INR); handle them appropriately in your responses. Use this data as your ONLY source of truth to answer any questions.
 
 Leads Data: {{{leadsJson}}}
 Tasks/Tickets Data: {{{tasksJson}}}
 Users Data: {{{usersJson}}}
-Financials Data (in USD): {{{financialsJson}}}
+Financials Data: {{{financialsJson}}}
 Today's Attendance Data: {{{attendanceJson}}}
 
 Here are some examples of how you should respond:
@@ -86,24 +76,7 @@ const platformAwareAIChatFlow = ai.defineFlow(
     outputSchema: PlatformAwareAIChatOutputSchema,
   },
   async input => {
-    const financials: FinancialEntry[] = JSON.parse(input.financialsJson);
-    const rates = await getExchangeRates('USD');
-
-    const financialsInUsd = financials.map(entry => {
-        if (entry.currency === 'USD' || !rates[entry.currency]) {
-            return entry;
-        }
-        return {
-            ...entry,
-            amount: entry.amount / rates[entry.currency],
-            currency: 'USD',
-        };
-    });
-
-    const {output} = await prompt({
-        ...input,
-        financialsJson: JSON.stringify(financialsInUsd),
-    });
+    const {output} = await prompt(input);
     return output!;
   }
 );
