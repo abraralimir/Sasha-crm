@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -12,68 +13,81 @@ import {
   Briefcase,
   Clock,
   UserCheck,
+  TrendingUp,
+  Workflow,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
 import { motion } from 'framer-motion';
 
-const features = [
-  {
-    icon: <BrainCircuit className="h-8 w-8 text-primary" />,
-    title: 'Platform-Aware AI Assistant',
-    description:
-      'Engage with Sasha, an AI with real-time knowledge of your CRM. Ask complex questions about leads, tasks, financials, and even daily employee attendance to get instant, data-driven answers.',
+const featureSections = {
+  intelligence: {
+    title: "Intelligence",
+    icon: <BrainCircuit className="h-6 w-6" />,
+    features: [
+      {
+        icon: <BrainCircuit className="h-8 w-8 text-primary" />,
+        title: 'Platform-Aware AI Assistant',
+        description: 'Engage with an AI that has real-time knowledge of your entire CRM, from leads and tasks to financials and employee attendance.',
+      },
+      {
+        icon: <UserCheck className="h-8 w-8 text-primary" />,
+        title: 'Facial Recognition Verification',
+        description: 'Enhance security with cutting-edge facial verification, validated in real-time by our AI against an enrolled reference image.',
+      },
+      {
+        icon: <TrendingUp className="h-8 w-8 text-primary" />,
+        title: 'Predictive ROI & Risk Analysis',
+        description: 'Leverage AI to analyze leads, predict potential ROI, and assess risks, allowing your team to focus on high-value opportunities.',
+      },
+    ]
   },
-  {
-    icon: <Layers className="h-8 w-8 text-primary" />,
-    title: 'Comprehensive Project Management',
-    description:
-      'Define, plan, and execute projects seamlessly. Leverage AI to generate structured project plans and task lists instantly, and manage progress with an integrated Kanban board on the project detail page.',
+  productivity: {
+    title: "Productivity",
+    icon: <Zap className="h-6 w-6" />,
+    features: [
+       {
+        icon: <Layers className="h-8 w-8 text-primary" />,
+        title: 'AI-Powered Project Management',
+        description: 'Define, plan, and execute projects seamlessly. Instantly generate structured project plans and manage tasks with an integrated Kanban board.',
+      },
+      {
+        icon: <CircleDollarSign className="h-8 w-8 text-primary" />,
+        title: 'Agentic Financials',
+        description: 'Track income and expenses with multi-currency support. Our AI agent analyzes your financial health and delivers actionable insights.',
+      },
+       {
+        icon: <Clock className="h-8 w-8 text-primary" />,
+        title: 'Real-Time Attendance & Presence',
+        description: "Monitor your team's live status, work hours, and breaks with an automated presence system for clear visibility into daily activity.",
+      },
+    ]
   },
-  {
-    icon: <UserCheck className="h-8 w-8 text-primary" />,
-    title: 'Facial Recognition Verification',
-    description:
-      'Enhance security with a cutting-edge facial verification system. Users can securely access the platform via a quick facial scan, which our AI validates against an enrolled reference image in real-time.',
+  collaboration: {
+    title: "Collaboration",
+    icon: <Users className="h-6 w-6" />,
+    features: [
+      {
+        icon: <MessageSquare className="h-8 w-8 text-primary" />,
+        title: 'Advanced Collaboration Hub',
+        description: 'A centralized hub for real-time communication. Share files, convert conversations into actionable tickets, and use AI to draft messages.',
+      },
+       {
+        icon: <Video className="h-8 w-8 text-primary" />,
+        title: 'Integrated HD Conferencing',
+        description: 'Seamlessly transition from chat to a face-to-face video conference directly within the platform, keeping all communication in one place.',
+      },
+      {
+        icon: <Briefcase className="h-8 w-8 text-primary" />,
+        title: 'Human Resources Hub',
+        description: 'Access a centralized HR dashboard to monitor employee performance, manage attendance, and distribute company policies.',
+      },
+    ]
   },
-  {
-    icon: <Briefcase className="h-8 w-8 text-primary" />,
-    title: 'Human Resources Hub',
-    description:
-      'Access a centralized HR dashboard. Monitor daily employee performance with detailed reports on work hours and task completion, and manage company policies with an integrated document upload and viewing system.',
-  },
-  {
-    icon: <Clock className="h-8 w-8 text-primary" />,
-    title: 'Real-Time Attendance & Presence',
-    description:
-      "Track your team's live status, work hours, and breaks with an automated presence system. Employees can check-in, manage breaks, and check-out, providing clear visibility into daily team activity.",
-  },
-  {
-    icon: <CircleDollarSign className="h-8 w-8 text-primary" />,
-    title: 'Agentic Financials',
-    description:
-      'Track income, expenses, and investments with multi-currency support. Leverage our AI agent to analyze your financial health, identify trends, and receive actionable insights—all converted to a unified currency (USD).',
-  },
-  {
-    icon: <Zap className="h-8 w-8 text-primary" />,
-    title: 'Intelligent Automation',
-    description:
-      'Automate repetitive tasks from lead creation to task assignment. Our AI analyzes patterns to predict lead ROI and assess risks, freeing your team to focus on strategic growth and closing high-value deals.',
-  },
-  {
-    icon: <MessageSquare className="h-8 w-8 text-primary" />,
-    title: 'Advanced Collaboration Hub',
-    description:
-      'A centralized hub for real-time communication. Share files, convert conversations directly into actionable tickets, and use AI to draft messages, ensuring your team is aligned and efficient.',
-  },
-  {
-    icon: <Video className="h-8 w-8 text-primary" />,
-    title: 'Integrated HD Conferencing',
-    description:
-      'Seamlessly transition from chat to a face-to-face video conference. Conduct strategy sessions or client calls with high-definition video directly within the platform, keeping all communication in one place.',
-  },
-];
+};
+
 
 const upcomingFeatures = [
   {
@@ -115,12 +129,12 @@ export default function AboutPage() {
         <Logo />
       </header>
 
-      <main className="container mx-auto px-4 py-16 text-center">
+      <main className="container mx-auto px-4 py-16 md:py-24 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-4xl md:text-6xl font-headline tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-primary"
+          className="text-4xl md:text-6xl font-headline tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-primary via-blue-400 to-primary"
         >
           The Future of Intelligent CRM
         </motion.h1>
@@ -137,45 +151,59 @@ export default function AboutPage() {
         </motion.p>
       </main>
 
-      <section className="container mx-auto px-4 py-20">
-        <h2 className="text-3xl md:text-4xl font-headline text-center mb-12">
-          Core Pillars of SashaLeads AI
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, i) => (
-            <motion.div
-              key={feature.title}
-              variants={cardVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
-            >
-              <Card
-                className="bg-card/50 backdrop-blur-sm border-border/50 text-center h-full transform hover:-translate-y-1 transition-transform duration-300"
+      {Object.values(featureSections).map((section, sectionIndex) => (
+        <section key={section.title} className="container mx-auto px-4 py-12 md:py-20">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={cardVariants}
+            className="flex items-center justify-center gap-4 mb-12"
+          >
+             <div className="w-16 h-px bg-border"></div>
+              <h2 className="text-3xl font-headline text-center flex items-center gap-3 text-primary">
+                  {section.icon}
+                  {section.title}
+              </h2>
+             <div className="w-16 h-px bg-border"></div>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {section.features.map((feature) => (
+              <motion.div
+                key={feature.title}
+                variants={cardVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
               >
-                <CardHeader>
-                  <div className="mx-auto bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
-                    {feature.icon}
-                  </div>
-                  <CardTitle className="font-semibold text-lg">
-                    {feature.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-muted-foreground">
-                  <p>{feature.description}</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+                <Card
+                  className="bg-card/50 backdrop-blur-sm border-border/50 text-center h-full transform hover:-translate-y-1 transition-transform duration-300"
+                >
+                  <CardHeader>
+                    <div className="mx-auto bg-primary/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                      {feature.icon}
+                    </div>
+                    <CardTitle className="font-semibold text-lg">
+                      {feature.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-muted-foreground">
+                    <p>{feature.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      ))}
+
 
       <section className="container mx-auto px-4 py-20">
         <h2 className="text-3xl md:text-4xl font-headline text-center mb-12">
           On the Horizon
         </h2>
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          {upcomingFeatures.map((feature, index) => (
+          {upcomingFeatures.map((feature) => (
              <motion.div
                 key={feature.title}
                 variants={cardVariants}
@@ -184,7 +212,6 @@ export default function AboutPage() {
                 viewport={{ once: true, amount: 0.5 }}
               >
                 <div
-                    key={index}
                     className="p-6 border border-dashed border-border/30 rounded-lg bg-card/20 h-full"
                 >
                     <h3 className="font-semibold text-primary mb-2">
