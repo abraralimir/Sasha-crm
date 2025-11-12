@@ -41,6 +41,10 @@
         "startDate": {
           "type": "object",
           "description": "The user's start date in the company."
+        },
+        "fcmToken": {
+            "type": "string",
+            "description": "The Firebase Cloud Messaging token for push notifications."
         }
       },
       "required": [
@@ -349,6 +353,19 @@
         "createdAt"
       ]
     },
+    "NotificationRequest": {
+        "title": "Notification Request",
+        "description": "A request to send a push notification to a user or group of users.",
+        "type": "object",
+        "properties": {
+          "senderId": { "type": "string" },
+          "senderName": { "type": "string" },
+          "groupId": { "type": "string" },
+          "groupName": { "type": "string" },
+          "messageText": { "type": "string" }
+        },
+        "required": ["senderId", "senderName", "groupId", "groupName", "messageText"]
+      },
     "FinancialEntry": {
       "title": "Financial Entry",
       "description": "Represents a single financial entry (income, expense, or investment).",
@@ -563,6 +580,10 @@
       },
       "description": "Stores notifications for a specific user. Users can only access their own notifications."
     },
+    "/notificationRequests/{requestId}": {
+        "schema": { "$ref": "#/entities/NotificationRequest" },
+        "description": "A collection to queue push notification jobs for the backend."
+    },
     "/attendance/{logId}": {
       "schema": {
         "$ref": "#/entities/AttendanceLog"
@@ -583,3 +604,5 @@
     }
   }
 }
+
+    

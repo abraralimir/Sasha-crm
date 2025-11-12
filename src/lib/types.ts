@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 
 export type Lead = {
@@ -38,6 +39,7 @@ export type UserProfile = {
     facialVerificationImageUrl?: string;
     jobTitle?: string;
     department?: string;
+    fcmToken?: string;
 };
 
 export type Notification = {
@@ -47,6 +49,15 @@ export type Notification = {
     link: string;
     read: boolean;
     createdAt: Timestamp;
+};
+
+export type NotificationRequest = {
+    id: string;
+    senderId: string;
+    senderName: string;
+    groupId: string;
+    groupName: string;
+    messageText: string;
 };
 
 export type FinancialEntry = {
@@ -143,3 +154,5 @@ export type ChatGroup = {
     createdBy: string; // user ID
     createdAt: Timestamp;
 };
+
+    

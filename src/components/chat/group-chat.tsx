@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Loader2, Send, Paperclip, Sparkles, EllipsisVertical, File, ListPlus } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, serverTimestamp, query, orderBy, getDoc, writeBatch, doc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, query, orderBy, getDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Timestamp } from 'firebase/firestore';
-import type { UserProfile, ChatGroup, ChatMessage } from '@/lib/types';
+import type { UserProfile, ChatGroup, ChatMessage, NotificationRequest } from '@/lib/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,29 +85,18 @@ export function GroupChat({ groupId }: { groupId: string }) {
     setInput(e.target.value);
   };
   
-  const createNotificationsForOtherUsers = async (messageText: string) => {
+  const triggerNotificationRequest = (messageText: string) => {
     if (!firestore || !user || !group) return;
-  
-    try {
-      const otherMembers = group.members.filter(m => m !== user.uid);
-      const batch = writeBatch(firestore);
-  
-      otherMembers.forEach(otherUserId => {
-        const notificationRef = doc(collection(firestore, 'users', otherUserId, 'notifications'));
-        const notificationPayload = {
-          title: `New message in ${group.name}`,
-          message: `${user.displayName}: ${messageText.substring(0, 30)}...`,
-          link: `/chat`,
-          read: false,
-          createdAt: serverTimestamp(),
-        };
-        batch.set(notificationRef, notificationPayload);
-      });
-  
-      await batch.commit();
-    } catch (error) {
-      console.error("Failed to create chat notifications:", error);
-    }
+
+    const requestPayload: Omit<NotificationRequest, 'id'> = {
+      senderId: user.uid,
+      senderName: user.displayName || 'A team member',
+      groupId: group.id,
+      groupName: group.name,
+      messageText: messageText.substring(0, 100), // Truncate message
+    };
+    
+    addDocumentNonBlocking(collection(firestore, 'notificationRequests'), requestPayload);
   };
 
   const sendMessage = (messagePayload: Omit<ChatMessage, 'id' | 'timestamp' | 'groupId'> & { timestamp: any }) => {
@@ -118,12 +107,8 @@ export function GroupChat({ groupId }: { groupId: string }) {
 
     addDoc(messagesCollection, payloadWithGroup)
       .then(() => {
-          if (group) { // Only send notifications for specific groups, not main chat
-            if (messagePayload.type === 'text') {
-              createNotificationsForOtherUsers(messagePayload.text);
-            } else if (messagePayload.fileName) {
-              createNotificationsForOtherUsers(`File: ${messagePayload.fileName}`);
-            }
+          if (group) { // Only trigger notifications for specific groups
+            triggerNotificationRequest(messagePayload.text);
           }
       })
       .catch((error) => {
@@ -160,9 +145,10 @@ export function GroupChat({ groupId }: { groupId: string }) {
     const file = e.target.files?.[0];
     if (file && user) {
         // Placeholder for actual file upload to Firebase Storage
+        const fileMessageText = `File: ${file.name}`;
         sendMessage({
             type: 'file',
-            text: `File: ${file.name}`,
+            text: fileMessageText,
             fileName: file.name,
             userId: user.uid,
             userName: user.displayName || 'Anonymous User',
@@ -342,3 +328,5 @@ export function GroupChat({ groupId }: { groupId: string }) {
     </>
   );
 }
+
+    
