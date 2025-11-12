@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -37,10 +36,10 @@ const prompt = ai.definePrompt(
     input: {schema: FacialVerificationInputSchema},
     output: {schema: FacialVerificationOutputSchema},
     // Use a specific model configuration for this prompt.
-    // The gemini-1.5-flash model is excellent for multimodal tasks like image comparison.
+    // The gemini-2.0-flash model is the stable choice.
     // Temperature is set to 0.0 for deterministic, fact-based analysis.
     config: {
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       temperature: 0.0,
     },
     // The system prompt that instructs the AI on its role and task.
