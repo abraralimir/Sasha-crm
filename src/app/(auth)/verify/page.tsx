@@ -57,6 +57,14 @@ export default function VerifyPage() {
   const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
   const { data: allUsers } = useCollection<UserProfile>(usersCollection);
 
+  const stopCamera = useCallback(() => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
   useEffect(() => {
     sessionStorage.removeItem('isVerified');
     sessionStorage.removeItem('verifiedEmail');
@@ -116,10 +124,8 @@ export default function VerifyPage() {
   const handleTabChange = (value: string) => {
     if (value === 'face' && hasCameraPermission === null) {
       getCameraPermission();
-    } else if (value === 'key' && videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
+    } else if (value === 'key') {
+      stopCamera();
     }
   };
 
@@ -209,6 +215,7 @@ export default function VerifyPage() {
           handleFailedAttempt();
       } finally {
           setIsFaceLoading(false);
+          stopCamera();
       }
   };
 
