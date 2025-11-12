@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AddTaskForm } from '../dashboard/add-task-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
-import { enableAIChatWithFileContext } from '@/ai/flows/ai-chat-with-file-context';
 
 
 export function GroupChat({ groupId }: { groupId: string }) {
@@ -168,28 +167,11 @@ export function GroupChat({ groupId }: { groupId: string }) {
   };
 
   const handleAiAction = async () => {
-    if (!input.trim()) {
-        toast({
-            variant: 'destructive',
-            title: 'Prompt required',
-            description: 'Please enter a prompt for the AI to generate a response.',
-        });
-        return;
-    }
-    setIsAiLoading(true);
-    try {
-        const result = await enableAIChatWithFileContext({ userQuery: input });
-        setInput(result.response);
-    } catch (error) {
-        console.error("Error with AI action", error);
-        toast({
-            variant: 'destructive',
-            title: 'AI Error',
-            description: 'Failed to get a response from the AI.',
-        });
-    } finally {
-        setIsAiLoading(false);
-    }
+    toast({
+        variant: "destructive",
+        title: "AI Feature Unavailable",
+        description: "This feature has been temporarily disabled."
+    })
   };
 
   const handleCreateTicket = (message: ChatMessage) => {

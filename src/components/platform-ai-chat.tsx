@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { Bot, Loader2, Send, X } from 'lucide-react';
-import { platformAwareAIChat, PlatformAwareAIChatInput } from '@/ai/flows/platform-aware-ai-chat';
+import { getAIResponse } from '@/ai/chat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -38,32 +38,6 @@ export function PlatformAiChat() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  // Hooks to fetch all relevant data
-  const leadsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'leads') : null, [firestore]);
-  const tasksCollection = useMemoFirebase(() => firestore ? collection(firestore, 'tasks') : null, [firestore]);
-  const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
-  const financialsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'financials') : null, [firestore]);
-  
-  const todayStart = useMemo(() => startOfDay(new Date()), []);
-  const todayEnd = useMemo(() => endOfDay(new Date()), []);
-
-  const attendanceQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(
-      collection(firestore, 'attendance'),
-      where('timestamp', '>=', todayStart),
-      where('timestamp', '<=', todayEnd)
-    );
-  }, [firestore, todayStart, todayEnd]);
-
-
-  const { data: leads, isLoading: leadsLoading } = useCollection<Lead>(leadsCollection);
-  const { data: tasks, isLoading: tasksLoading } = useCollection<Task>(tasksCollection);
-  const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersCollection);
-  const { data: financials, isLoading: financialsLoading } = useCollection<FinancialEntry>(financialsCollection);
-  const { data: attendance, isLoading: attendanceLoading } = useCollection<AttendanceLog>(attendanceQuery);
-
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
   };
@@ -74,21 +48,13 @@ export function PlatformAiChat() {
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-      const chatInput: PlatformAwareAIChatInput = { 
-        query: input, 
-        userId: user.uid,
-        leadsJson: JSON.stringify(leads || []),
-        tasksJson: JSON.stringify(tasks || []),
-        usersJson: JSON.stringify(users || []),
-        financialsJson: JSON.stringify(financials || []),
-        attendanceJson: JSON.stringify(attendance || []),
-      };
-      const result = await platformAwareAIChat(chatInput);
-      const assistantMessage: Message = { role: 'assistant', content: result.response };
+      const result = await getAIResponse(currentInput);
+      const assistantMessage: Message = { role: 'assistant', content: result };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('AI chat error:', error);
@@ -97,14 +63,11 @@ export function PlatformAiChat() {
         title: 'Error',
         description: 'Failed to get a response from the AI assistant.',
       });
-      // Do not remove the user's message on failure, so they can retry
     } finally {
       setIsLoading(false);
     }
   };
   
-  const isDataLoading = leadsLoading || tasksLoading || usersLoading || financialsLoading || attendanceLoading;
-
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -118,7 +81,6 @@ export function PlatformAiChat() {
           <SheetTitle>Platform Assistant</SheetTitle>
           <SheetDescription>
             Ask Sasha AI anything about your leads, projects, and platform data.
-            {isDataLoading && <span className='text-xs text-muted-foreground block animate-pulse'>Loading platform data...</span>}
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-hidden">
@@ -178,10 +140,10 @@ export function PlatformAiChat() {
             <Input
               value={input}
               onChange={handleInputChange}
-              placeholder={isDataLoading ? "Sasha is synching..." : "e.g., 'How many new leads?'"}
-              disabled={isLoading || isDataLoading}
+              placeholder={"e.g., 'How many new leads?'"}
+              disabled={isLoading}
             />
-            <Button type="submit" disabled={isLoading || !input.trim() || isDataLoading}>
+            <Button type="submit" disabled={isLoading || !input.trim()}>
               <Send className="h-4 w-4" />
             </Button>
           </form>

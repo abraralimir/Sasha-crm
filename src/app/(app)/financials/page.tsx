@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -23,7 +24,6 @@ import {
 import { FinancialEntryForm } from '@/components/financials/financial-entry-form';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { analyzeFinancials, AnalyzeFinancialsOutput } from '@/ai/flows/analyze-financials';
 import { getExchangeRates, ExchangeRates } from '@/lib/currency';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -38,7 +38,7 @@ export default function FinancialsPage() {
   const [entryToEdit, setEntryToEdit] = useState<FinancialEntryWithId | null>(null);
   const [entryToDelete, setEntryToDelete] = useState<FinancialEntryWithId | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<AnalyzeFinancialsOutput | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<any | null>(null);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
 
   useEffect(() => {
@@ -72,8 +72,6 @@ export default function FinancialsPage() {
     
     const convertToUsd = (amount: number, currency: 'USD' | 'AED' | 'INR') => {
       if (currency === 'USD') return amount;
-      // frankfurter.app provides rates to convert from base (USD) to target.
-      // So to convert a target currency TO USD, we divide.
       return amount / (exchangeRates[currency] || 1);
     };
 
@@ -121,21 +119,11 @@ export default function FinancialsPage() {
   };
   
   const handleAiAnalysis = async () => {
-    setIsAiLoading(true);
-    setAiAnalysis(null);
-    try {
-        const result = await analyzeFinancials({ financialsJson: JSON.stringify(financials) });
-        setAiAnalysis(result);
-    } catch (error) {
-        console.error("AI Analysis Error:", error);
-        toast({
-            variant: "destructive",
-            title: "AI Analysis Failed",
-            description: "Could not generate financial insights.",
-        });
-    } finally {
-        setIsAiLoading(false);
-    }
+    toast({
+        variant: "destructive",
+        title: "AI Feature Unavailable",
+        description: "This feature has been temporarily disabled.",
+    });
   }
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -172,37 +160,6 @@ export default function FinancialsPage() {
         <KpiCard title="Total Expenses (USD)" value={renderKpiValue(financialSummary.totalExpenses)} icon={<TrendingDown className="text-red-500" />} />
         <KpiCard title="Net Profit/Loss (USD)" value={renderKpiValue(financialSummary.netProfit)} icon={<DollarSign className={financialSummary.netProfit >= 0 ? "text-primary" : "text-destructive"} />} />
       </div>
-
-      {isAiLoading && (
-         <Card>
-            <CardHeader><CardTitle>AI Analysis in Progress...</CardTitle></CardHeader>
-            <CardContent className="flex items-center justify-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></CardContent>
-         </Card>
-      )}
-
-      {aiAnalysis && (
-        <Card className="bg-secondary/50 border-primary/50">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><BrainCircuit className="text-primary" /> AI-Powered Financial Analysis</CardTitle>
-                <CardDescription>{aiAnalysis.overallAssessment}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                   {aiAnalysis.keyInsights.map((insight, index) => (
-                     <Card key={index}>
-                        <CardHeader>
-                            <CardTitle className="text-lg">{insight.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground mb-2">{insight.explanation}</p>
-                            {insight.recommendation && <p className="text-sm font-semibold text-primary">{insight.recommendation}</p>}
-                        </CardContent>
-                     </Card>
-                   ))}
-                </div>
-            </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>

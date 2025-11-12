@@ -20,7 +20,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { GeneratedPlan } from '@/lib/types';
 import { useState } from 'react';
 import { ScrollArea } from '../ui/scroll-area';
-import { generateProjectTimeline } from '@/ai/flows/generate-project-timeline';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
 const formSchema = z.object({
@@ -52,8 +51,6 @@ const createSlug = (projectName: string) => {
 export function ProjectForm({ project, onFinished }: ProjectFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,31 +64,11 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
   });
 
   const handleGeneratePlan = async () => {
-      const { description } = form.getValues();
-      if (!description) {
-          toast({
-              variant: 'destructive',
-              title: 'Description Needed',
-              description: 'Please fill out the project description to generate a plan.'
-          });
-          return;
-      }
-      setIsAiLoading(true);
-      setGeneratedPlan(null);
-      try {
-          const result = await generateProjectTimeline({ projectScope: description, projectComplexity: "Medium" });
-          const plan = JSON.parse(result.timeline);
-          setGeneratedPlan(plan);
-           toast({
-              title: 'AI Plan Generated',
-              description: 'A project plan has been structured below.',
-          });
-      } catch (error) {
-          console.error("AI plan generation error:", error);
-          toast({ variant: 'destructive', title: 'AI Error', description: 'Failed to parse the AI-generated plan. Please try again.' });
-      } finally {
-          setIsAiLoading(false);
-      }
+    toast({
+        variant: 'destructive',
+        title: 'AI Feature Unavailable',
+        description: 'This feature has been temporarily disabled.'
+    });
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -103,7 +80,7 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
       startDate: Timestamp.fromDate(values.dates.from),
       endDate: Timestamp.fromDate(values.dates.to),
       team: [],
-      aiGeneratedPlan: generatedPlan || null,
+      aiGeneratedPlan: null,
     };
     delete (payload as any).dates;
 
@@ -242,32 +219,10 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
                 />
 
                 <div className="pt-4 space-y-4">
-                    <Button type="button" variant="outline" className="w-full" onClick={handleGeneratePlan} disabled={isAiLoading}>
-                        {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                    <Button type="button" variant="outline" className="w-full" onClick={handleGeneratePlan}>
+                        <BrainCircuit className="mr-2 h-4 w-4" />
                         Generate Project Plan with AI
                     </Button>
-
-                    {generatedPlan && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>AI-Generated Project Plan</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {generatedPlan.phases.map((phase, phaseIndex) => (
-                                    <div key={phaseIndex}>
-                                        <h4 className="font-semibold text-primary">{phase.phaseName}</h4>
-                                        <ul className="list-disc pl-5 mt-2 space-y-1 text-sm text-muted-foreground">
-                                            {phase.tasks.map((task, taskIndex) => (
-                                                <li key={taskIndex}>
-                                                    <span className="font-medium text-foreground">{task.taskName}</span> - {task.description} ({task.durationDays} days)
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-                    )}
                 </div>
 
                 <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
