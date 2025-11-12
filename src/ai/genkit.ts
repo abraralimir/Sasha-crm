@@ -12,5 +12,5 @@ export const ai = genkit({
       apiVersion: ['v1', 'v1beta'],
     }),
   ],
-  model: 'gemini-2.5-flash', // Default model for all flows unless overridden
+  model: 'models/gemini-2.5-flash', // Default model for all flows unless overridden
 });

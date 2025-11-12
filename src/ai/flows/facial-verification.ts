@@ -66,7 +66,7 @@ Your response must be extremely strict. If you are not highly confident, you MUS
 Based on your analysis, determine if the person in Image A is the same as the person in Image B and provide a confidence score.
 `,
   config: {
-    model: 'gemini-2.5-flash',
+    model: 'models/gemini-2.5-flash',
     temperature: 0.0, // Be deterministic for security checks
   }
 });
