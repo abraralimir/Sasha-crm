@@ -13,7 +13,7 @@ if (!process.env.GEMINI_API_KEY) {
 }
 
 // Initialize Genkit with the Google AI plugin.
-// The default model is set to 'gemini-2.5-flash', which is a stable and
+// The default model is set to 'gemini-1.5-flash', which is a stable and
 // performant choice for web applications in the free tier.
 export const ai = genkit({
   plugins: [
@@ -22,5 +22,5 @@ export const ai = genkit({
       apiKey: process.env.GEMINI_API_KEY,
     }),
   ],
-  model: 'gemini-2.5-flash', // Use the reliable short alias
+  model: 'gemini-1.5-flash',
 });

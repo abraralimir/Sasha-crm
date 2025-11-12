@@ -63,6 +63,22 @@ export default function AdminPage() {
     },
   });
 
+   useEffect(() => {
+    if (hasCameraPermission && videoRef.current) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            })
+            .catch(err => {
+                console.error("Error accessing camera stream:", err);
+                setHasCameraPermission(false);
+                toast({ variant: "destructive", title: "Camera Error" });
+            });
+    }
+  }, [hasCameraPermission, toast]);
+
   const getCameraPermission = async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
           setHasCameraPermission(false);
@@ -101,7 +117,18 @@ export default function AdminPage() {
     canvas.getContext('2d')?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
     const dataUrl = canvas.toDataURL('image/jpeg');
     setCapturedImage(dataUrl);
+
+    // Stop the camera stream
+    const stream = video.srcObject as MediaStream;
+    stream.getTracks().forEach(track => track.stop());
+    video.srcObject = null;
   };
+
+  const handleRetake = () => {
+    setCapturedImage(null);
+    getCameraPermission(); // Re-request permission and stream
+  };
+
 
   const onSubmit = async (values: z.infer<typeof formSchema>, imageSource: 'upload' | 'capture') => {
     if (!firestore) return;
@@ -109,21 +136,21 @@ export default function AdminPage() {
     let imageUrl = '';
     let imageName = '';
 
+    // Simulate file upload and get a URL. In a real app, this would use Firebase Storage.
     if (imageSource === 'upload') {
-      if (!values.imageFile) {
+      const file = values.imageFile;
+      if (!file) {
         toast({ variant: 'destructive', title: 'No Image', description: 'Please select an image file to upload.' });
         return;
       }
-      // Placeholder for actual file upload to Firebase Storage
-      imageName = values.imageFile.name;
-      imageUrl = `https://storage.placeholder.com/faces/${values.email}/${imageName}`;
+      imageName = file.name;
+      imageUrl = URL.createObjectURL(file); // Placeholder URL for display
     } else if (imageSource === 'capture') {
       if (!capturedImage) {
         toast({ variant: 'destructive', title: 'No Image', description: 'Please capture an image from the webcam.' });
         return;
       }
       imageName = `capture-${Date.now()}.jpg`;
-      // Here you would upload the base64 `capturedImage` to storage
       imageUrl = capturedImage;
     }
 
@@ -228,16 +255,18 @@ export default function AdminPage() {
                     </TabsContent>
                     <TabsContent value="capture" className="pt-4 space-y-4">
                         <div className="aspect-video w-full bg-secondary rounded-md overflow-hidden relative flex items-center justify-center">
-                            <video ref={videoRef} className={cn("w-full h-full object-cover", { 'hidden': !hasCameraPermission || capturedImage })} autoPlay playsInline muted />
+                            {!capturedImage && (
+                                <video ref={videoRef} className={cn("w-full h-full object-cover", { 'hidden': !hasCameraPermission })} autoPlay playsInline muted />
+                            )}
                             <canvas ref={canvasRef} className="hidden"></canvas>
                             {hasCameraPermission === false && <p className="text-destructive-foreground">Camera access denied.</p>}
-                            {hasCameraPermission === null && <Loader2 className="h-8 w-8 animate-spin" />}
+                            {hasCameraPermission === null && !capturedImage && <Loader2 className="h-8 w-8 animate-spin" />}
                             {capturedImage && <img src={capturedImage} alt="Captured reference" className="w-full h-full object-cover" />}
                         </div>
 
                         {capturedImage ? (
                           <div className='flex gap-2'>
-                              <Button onClick={() => setCapturedImage(null)} variant="outline" className="w-full">
+                              <Button onClick={handleRetake} variant="outline" className="w-full">
                                 <RefreshCcw className="mr-2 h-4 w-4" />
                                 Retake
                               </Button>
@@ -273,7 +302,10 @@ export default function AdminPage() {
                         <div key={user.id} className="flex items-center justify-between p-2 rounded-md bg-secondary">
                             <div className='flex items-center gap-3'>
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-                                    <UserCheck className="h-5 w-5 text-primary" />
+                                  <Avatar className="h-10 w-10">
+                                      <AvatarImage src={user.facialVerificationImageUrl} />
+                                      <AvatarFallback><UserCheck className="h-5 w-5 text-primary" /></AvatarFallback>
+                                  </Avatar>
                                 </div>
                                 <div>
                                     <p className="font-medium">{user.name}</p>
@@ -290,5 +322,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
