@@ -13,6 +13,7 @@ import {z} from 'genkit';
 
 const EnableAIChatWithFileContextInputSchema = z.object({
   userQuery: z.string().describe('The user query or message.'),
+  fileContext: z.string().optional().describe('The extracted text content from a relevant file.'),
 });
 export type EnableAIChatWithFileContextInput = z.infer<
   typeof EnableAIChatWithFileContextInputSchema
@@ -35,7 +36,20 @@ const prompt = ai.definePrompt({
   name: 'aiChatWithFileContextPrompt',
   input: {schema: EnableAIChatWithFileContextInputSchema},
   output: {schema: EnableAIChatWithFileContextOutputSchema},
-  prompt: `You are an AI assistant. Answer the following question from the user: {{{userQuery}}}.`,
+  prompt: `You are Sasha AI, a helpful assistant. Your task is to answer the user's question. If file context is provided, use it as the primary source of information to formulate your response.
+
+User Query: {{{userQuery}}}
+
+{{#if fileContext}}
+File Context:
+---
+{{{fileContext}}}
+---
+{{/if}}
+`,
+  config: {
+    temperature: 0.5,
+  }
 });
 
 const enableAIChatWithFileContextFlow = ai.defineFlow(

@@ -17,7 +17,7 @@ const GenerateProjectTimelineInputSchema = z.object({
     .describe('The scope of the project, including its goals and deliverables.'),
   projectComplexity: z
     .string()
-    .describe('The complexity of the project, considering factors such as technical difficulty, team size, and dependencies.'),
+    .describe('The complexity of the project, considering factors such as technical difficulty, team size, and dependencies. e.g., "Low", "Medium", "High"'),
 });
 export type GenerateProjectTimelineInput = z.infer<
   typeof GenerateProjectTimelineInputSchema
@@ -40,26 +40,28 @@ const prompt = ai.definePrompt({
   name: 'generateProjectTimelinePrompt',
   input: {schema: GenerateProjectTimelineInputSchema},
   output: {schema: GenerateProjectTimelineOutputSchema},
-  prompt: `You are Sasha, an AI assistant specializing in project management.
-
-  Based on the project scope and complexity provided, generate a structured project plan.
+  prompt: `You are Sasha, an AI assistant specializing in project management. Your task is to generate a structured, logical project plan based on the provided scope and complexity.
 
   Project Scope: {{{projectScope}}}
   Project Complexity: {{{projectComplexity}}}
 
   Your output MUST be a valid JSON object containing a single key "phases".
-  The "phases" key should be an array of objects, where each object represents a project phase.
+  The "phases" key should be an array of objects, where each object represents a logical project phase (e.g., "Phase 1: Discovery & Planning", "Phase 2: Design & Prototyping").
+  
   Each phase object must have two keys:
-  1. "phaseName": A string for the name of the phase (e.g., "Phase 1: Discovery & Planning").
+  1. "phaseName": A string for the name of the phase.
   2. "tasks": An array of task objects for that phase.
 
   Each task object must have three keys:
-  1. "taskName": A string for the specific task.
-  2. "description": A brief string describing the task.
-  3. "durationDays": A number representing the estimated duration in days.
+  1. "taskName": A string for the specific, actionable task.
+  2. "description": A brief string describing the task's purpose.
+  3. "durationDays": A number representing a realistic estimated duration in days.
 
-  Do not include any text or formatting outside of the main JSON object.
+  Do not include any text, markdown, or formatting outside of the main JSON object. The entire output must be parseable as JSON.
   `,
+  config: {
+    temperature: 0.4,
+  }
 });
 
 const generateProjectTimelineFlow = ai.defineFlow(

@@ -27,13 +27,13 @@ export type PredictLeadROIInput = z.infer<typeof PredictLeadROIInputSchema>;
 const PredictLeadROIOutputSchema = z.object({
   predictedROI: z
     .number()
-    .describe('The predicted ROI for the lead, expressed as a percentage.'),
+    .describe('The predicted ROI for the lead, expressed as a percentage (e.g., 150.5 for 150.5%).'),
   confidenceLevel: z
-    .string()
-    .describe('A description of the confidence level in the ROI prediction (e.g., high, medium, low).'),
+    .enum(['High', 'Medium', 'Low'])
+    .describe('A confidence level in the ROI prediction.'),
   reasoning: z
     .string()
-    .describe('Explanation of the factors influencing the ROI prediction.'),
+    .describe('A detailed explanation of the factors and logic influencing the ROI prediction, referencing the provided context.'),
 });
 export type PredictLeadROIOutput = z.infer<typeof PredictLeadROIOutputSchema>;
 
@@ -45,16 +45,24 @@ const prompt = ai.definePrompt({
   name: 'predictLeadROIPrompt',
   input: {schema: PredictLeadROIInputSchema},
   output: {schema: PredictLeadROIOutputSchema},
-  prompt: `You are an AI assistant that predicts the potential ROI of a lead based on historical data and market trends.
+  prompt: `You are Sasha, a sophisticated AI analyst that predicts the potential Return on Investment (ROI) of a business lead. Your analysis must be grounded in the data provided.
 
-  Consider the following information about the lead:
-  Lead Details: {{{leadDetails}}}
-  Historical Data: {{{historicalData}}}
-  Market Trends: {{{marketTrends}}}
+CONTEXT:
+- Lead Details: {{{leadDetails}}}
+- Historical Data: {{{historicalData}}}
+- Market Trends: {{{marketTrends}}}
 
-  Based on this information, predict the potential ROI for the lead, express the ROI as a percentage. Also include a confidence level (high, medium, low), and reason for the prediction.
-  Ensure that the predictedROI is a number.
-  `,
+INSTRUCTIONS:
+1.  **Analyze Context:** Synthesize all provided information to forecast the potential ROI.
+2.  **Predict ROI:** Calculate a specific 'predictedROI' value as a percentage.
+3.  **Assess Confidence:** Determine a 'confidenceLevel' (High, Medium, or Low) based on the quality and alignment of the data.
+4.  **Provide Reasoning:** Clearly explain your 'reasoning'. Justify how the lead details, market trends, and historical data contributed to your prediction.
+
+Your output must be in the specified JSON format.
+`,
+  config: {
+    temperature: 0.2,
+  }
 });
 
 const predictLeadROIFlow = ai.defineFlow(

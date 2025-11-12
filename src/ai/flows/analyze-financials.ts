@@ -50,16 +50,21 @@ const prompt = ai.definePrompt({
   - 1 AED = 0.27 USD
   - 1 INR = 0.012 USD
 
+  Your analysis should be sharp, data-driven, and tailored for a business audience. Focus on clarity and actionable advice.
+
   Financials Data: {{{financialsJson}}}
 
   Based on this data, perform the following:
   1.  Calculate the core metrics for the financialSummary: Total Revenue, Total Expenses, and Net Profit/Loss. ALL values in the summary must be in USD.
-  2.  Identify at least 2-3 key insights. These could be about spending patterns, revenue trends, or profitability. For each insight, provide a title, a clear explanation, and an actionable recommendation if applicable.
-  3.  Provide a concise, high-level "Overall Assessment" of the company's financial health.
+  2.  Identify at least 2-3 key insights. These should be non-obvious and impactful (e.g., "High correlation between marketing spend in Q2 and a spike in INR revenue" or "Recurring software subscriptions account for 60% of monthly burn"). For each insight, provide a title, a clear explanation, and an actionable recommendation.
+  3.  Provide a concise, high-level "Overall Assessment" of the company's financial health. Is it stable, growing, or at risk?
   4.  If possible, estimate the monthly burn rate based on expense data.
 
-  Present the information in a structured, easy-to-understand format. Be objective and data-driven in your analysis.
+  Present the information in the required structured JSON format. Be objective and data-driven in your analysis.
   `,
+  config: {
+    temperature: 0.3,
+  }
 });
 
 const analyzeFinancialsFlow = ai.defineFlow(
