@@ -1,37 +1,36 @@
-// This file is intentionally left blank.
-// It's a placeholder that will be populated by next-pwa.
-// We need to configure a custom service worker to handle Firebase Messaging.
 
-// Scripts for Firebase
-importScripts('https://www.gstatic.com/firebasejs/9.2.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.2.0/firebase-messaging-compat.js');
+// A service worker file is required to show notifications when the app is in the background.
+// This file is intentionally kept simple to allow for easy customization.
 
-// Initialize the Firebase app in the service worker
-// Be sure to replace the config values with your own
+// To learn more about how to customize this file, see the following link:
+// https://firebase.google.com/docs/cloud-messaging/js/receive
+
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+
+// This is the config from your web app.
+// It's needed to initialize the Firebase app in the service worker.
 const firebaseConfig = {
-  apiKey: "AIzaSyAVbbpnCILRyx1kN1wEAz5PNoHFweX-OJc",
-  authDomain: "studio-846341198-1cb7b.firebaseapp.com",
-  projectId: "studio-846341198-1cb7b",
-  storageBucket: "studio-846341198-1cb7b.appspot.com",
-  messagingSenderId: "39896202643",
-  appId: "1:39896202643:web:6d7402107b1d7b7f9b3c66"
+  "projectId": "studio-846341198-1cb7b",
+  "appId": "1:39896202643:web:6d7402107b1d7b7f9b3c66",
+  "apiKey": "AIzaSyAVbbpnCILRyx1kN1wEAz5PNoHFweX-OJc",
+  "authDomain": "studio-846341198-1cb7b.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "39896202643"
 };
 
-firebase.initializeApp(firebaseConfig);
 
-// Retrieve an instance of Firebase Messaging so that it can handle background
-// messages.
+firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  // Customize notification here
+messaging.onBackgroundMessage(function(payload) {
+  console.log('Received background message ', payload);
+
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/icon-192x192.png'
+    icon: '/icons/icon-192x192.png'
   };
 
-  self.registration.showNotification(notificationTitle,
-    notificationOptions);
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });
