@@ -9,9 +9,6 @@ if (!process.env.GEMINI_API_KEY) {
   throw new Error('GEMINI_API_KEY environment variable is not set.');
 }
 
-// Define the specific, stable model we are using for all operations.
-const model = 'models/gemini-2.0-flash-001';
-
 export const ai = genkit({
   plugins: [
     next(),
@@ -19,5 +16,5 @@ export const ai = genkit({
       apiKey: process.env.GEMINI_API_KEY,
     }),
   ],
-  model: model, // Default model for all flows unless overridden
+  model: 'gemini-2.0-flash', // Default model for all flows unless overridden
 });
