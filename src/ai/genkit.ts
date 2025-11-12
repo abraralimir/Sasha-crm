@@ -10,7 +10,7 @@ if (!process.env.GEMINI_API_KEY) {
 }
 
 // Define the specific, stable model we are using for all operations.
-const model = 'gemini-2.0-flash';
+const model = 'models/gemini-2.0-flash-001';
 
 export const ai = genkit({
   plugins: [

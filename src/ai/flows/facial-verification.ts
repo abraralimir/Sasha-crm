@@ -39,7 +39,7 @@ const prompt = ai.definePrompt(
     // The gemini-2.0-flash model is the stable choice.
     // Temperature is set to 0.0 for deterministic, fact-based analysis.
     config: {
-      model: 'gemini-2.0-flash',
+      model: 'models/gemini-2.0-flash-001',
       temperature: 0.0,
     },
     // The system prompt that instructs the AI on its role and task.
