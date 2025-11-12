@@ -21,31 +21,41 @@ export const usePushNotifications = () => {
 
     const messaging = getMessaging(firebaseApp);
 
-    const requestPermission = async () => {
-      try {
-        const currentToken = await getToken(messaging, { vapidKey: 'B...' }); // You need to generate a VAPID key in Firebase Console
-        if (currentToken) {
-          console.log('FCM Token:', currentToken);
-          // Save the token to Firestore for this user
-          const userDocRef = doc(firestore, 'users', user.uid);
-          await setDoc(userDocRef, { fcmToken: currentToken }, { merge: true });
-        } else {
-          console.log('No registration token available. Request permission to generate one.');
-          Notification.requestPermission().then((permission) => {
-            if (permission === 'granted') {
-              console.log('Notification permission granted.');
-              requestPermission(); // Retry getting token
+    const retrieveToken = async () => {
+        try {
+            const currentToken = await getToken(messaging, { vapidKey: 'B...' }); // You need to generate a VAPID key in Firebase Console
+            if (currentToken) {
+                console.log('FCM Token:', currentToken);
+                // Save the token to Firestore for this user
+                const userDocRef = doc(firestore, 'users', user.uid);
+                await setDoc(userDocRef, { fcmToken: currentToken }, { merge: true });
             } else {
-              console.log('Unable to get permission to notify.');
+                console.log('No registration token available. Permission not granted.');
             }
-          });
+        } catch (err) {
+            console.error('An error occurred while retrieving token. ', err);
         }
-      } catch (err) {
-        console.error('An error occurred while retrieving token. ', err);
+    };
+    
+    const requestPermissionAndGetToken = async () => {
+      if (Notification.permission === 'granted') {
+        retrieveToken();
+      } else if (Notification.permission === 'default') {
+        console.log('Requesting notification permission...');
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          console.log('Notification permission granted.');
+          retrieveToken();
+        } else {
+          console.log('Unable to get permission to notify.');
+        }
+      } else {
+        console.log('Notification permission has been denied.');
       }
     };
 
-    requestPermission();
+
+    requestPermissionAndGetToken();
 
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Message received. ', payload);
