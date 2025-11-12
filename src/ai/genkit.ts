@@ -1,5 +1,5 @@
 import {genkit} from 'genkit';
-import {gemini, googleAI} from '@genkit-ai/google-genai';
+import {googleAI} from '@genkit-ai/google-genai';
 import next from '@genkit-ai/next';
 
 // This file configures the Genkit AI instance.
@@ -10,15 +10,14 @@ if (!process.env.GEMINI_API_KEY) {
 }
 
 // Define the specific, stable model we are using for all operations.
-const model = gemini('gemini-2.0-flash');
+const model = 'gemini-2.0-flash';
 
 export const ai = genkit({
   plugins: [
     next(),
     googleAI({
       apiKey: process.env.GEMINI_API_KEY,
-      // Pass the defined model to the plugin configuration.
-      models: [model],
     }),
   ],
+  model: model, // Default model for all flows unless overridden
 });
