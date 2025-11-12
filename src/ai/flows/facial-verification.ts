@@ -36,8 +36,8 @@ const prompt = ai.definePrompt(
     input: {schema: FacialVerificationInputSchema},
     output: {schema: FacialVerificationOutputSchema},
     // Use a specific model configuration for this prompt.
-    // Temperature is set to 0.0 for deterministic, fact-based analysis.
     config: {
+      model: 'gemini-2.0-flash-001', // Use the specific, stable model ID
       temperature: 0.0,
     },
     // The system prompt that instructs the AI on its role and task.

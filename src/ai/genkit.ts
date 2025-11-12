@@ -16,5 +16,5 @@ export const ai = genkit({
       apiKey: process.env.GEMINI_API_KEY,
     }),
   ],
-  model: 'gemini-2.0-flash', // Default model for all flows unless overridden
+  model: 'gemini-2.0-flash-001', // Use the specific, stable model ID
 });
