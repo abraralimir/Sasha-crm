@@ -349,6 +349,44 @@
         "createdAt"
       ]
     },
+     "NotificationRequest": {
+      "title": "Notification Request",
+      "description": "A temporary document created to trigger a push notification function.",
+      "type": "object",
+      "properties": {
+        "groupId": {
+          "type": "string",
+          "description": "The ID of the group the message was sent to."
+        },
+        "groupName": {
+          "type": "string",
+          "description": "The name of the group."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "The ID of the user who sent the message."
+        },
+        "senderName": {
+          "type": "string",
+          "description": "The name of the user who sent the message."
+        },
+        "messageText": {
+          "type": "string",
+          "description": "The text content of the message."
+        },
+        "createdAt": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "groupId",
+        "groupName",
+        "senderId",
+        "senderName",
+        "messageText",
+        "createdAt"
+      ]
+    },
     "FinancialEntry": {
       "title": "Financial Entry",
       "description": "Represents a single financial entry (income, expense, or investment).",
@@ -580,6 +618,10 @@
         "$ref": "#/entities/PolicyDocument"
       },
       "description": "Stores company policies and documents. All authenticated users can read. (Write access should be restricted)."
+    },
+    "/notificationRequests/{requestId}": {
+        "schema": { "$ref": "#/entities/NotificationRequest" },
+        "description": "A collection to trigger backend notification functions."
     }
   }
 }

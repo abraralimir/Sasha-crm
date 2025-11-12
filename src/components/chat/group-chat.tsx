@@ -64,6 +64,8 @@ export function GroupChat({ groupId }: { groupId: string }) {
         const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists()) {
             setGroup({ id: groupDoc.id, ...groupDoc.data() } as ChatGroup);
+        } else {
+            setGroup(null);
         }
     }
     fetchGroup();
@@ -84,22 +86,19 @@ export function GroupChat({ groupId }: { groupId: string }) {
     setInput(e.target.value);
   };
   
-  const createInAppNotifications = (group: ChatGroup, messageText: string) => {
+  const createPushNotificationRequest = (group: ChatGroup, messageText: string) => {
     if (!firestore || !user) return;
     
-    group.members.forEach(memberId => {
-        if (memberId !== user.uid) { // Don't notify the sender
-            const notificationPayload = {
-                title: `New message in ${group.name}`,
-                message: `${user.displayName}: ${messageText.substring(0, 100)}`,
-                link: `/chat/${group.id}`,
-                read: false,
-                createdAt: serverTimestamp(),
-            };
-            const notificationRef = collection(firestore, 'users', memberId, 'notifications');
-            addDocumentNonBlocking(notificationRef, notificationPayload);
-        }
-    });
+    const notificationRequestPayload = {
+        groupId: group.id,
+        groupName: group.name,
+        senderId: user.uid,
+        senderName: user.displayName,
+        messageText: messageText,
+        createdAt: serverTimestamp(),
+    };
+    const notificationRequestsCollection = collection(firestore, 'notificationRequests');
+    addDocumentNonBlocking(notificationRequestsCollection, notificationRequestPayload);
   }
 
   const sendMessage = (messagePayload: Omit<ChatMessage, 'id' | 'timestamp' | 'groupId'> & { timestamp: any }) => {
@@ -110,8 +109,8 @@ export function GroupChat({ groupId }: { groupId: string }) {
 
     addDoc(messagesCollection, payloadWithGroup)
       .then(() => {
-          if (group) { // Only create notifications for specific groups
-            createInAppNotifications(group, messagePayload.text);
+          if (group && messagePayload.text) { 
+            createPushNotificationRequest(group, messagePayload.text);
           }
       })
       .catch((error) => {
