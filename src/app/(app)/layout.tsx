@@ -7,6 +7,7 @@ import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { useUser } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 import { usePresence } from '@/hooks/use-presence';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -14,6 +15,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
   
   // Initialize presence tracking for the logged-in user
   usePresence();
+  // Initialize push notifications
+  usePushNotifications();
 
   useEffect(() => {
     if (!isUserLoading && !user) {
