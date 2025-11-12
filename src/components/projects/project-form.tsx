@@ -21,6 +21,8 @@ import { GeneratedPlan } from '@/lib/types';
 import { useState } from 'react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { generateProjectPlan } from '@/ai/flows/project-planner';
+import { Separator } from '../ui/separator';
 
 const formSchema = z.object({
   projectName: z.string().min(3, 'Project name is required.'),
@@ -51,6 +53,8 @@ const createSlug = (projectName: string) => {
 export function ProjectForm({ project, onFinished }: ProjectFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiPlan, setAiPlan] = useState<GeneratedPlan | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,11 +68,26 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
   });
 
   const handleGeneratePlan = async () => {
-    toast({
-        variant: 'destructive',
-        title: 'AI Feature Unavailable',
-        description: 'This feature has been temporarily disabled.'
-    });
+    const { projectName, description } = form.getValues();
+    if (!projectName || !description) {
+        toast({
+            variant: 'destructive',
+            title: 'Missing Information',
+            description: 'Please fill out the Project Name and Description before generating a plan.'
+        });
+        return;
+    }
+    setIsAiLoading(true);
+    setAiPlan(null);
+    try {
+        const result = await generateProjectPlan({ projectName, description });
+        setAiPlan(result);
+    } catch (error) {
+        console.error("AI Plan generation failed:", error);
+        toast({ variant: 'destructive', title: 'AI Plan Failed', description: 'Could not generate a project plan.' });
+    } finally {
+        setIsAiLoading(false);
+    }
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -80,7 +99,7 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
       startDate: Timestamp.fromDate(values.dates.from),
       endDate: Timestamp.fromDate(values.dates.to),
       team: [],
-      aiGeneratedPlan: null,
+      aiGeneratedPlan: aiPlan,
     };
     delete (payload as any).dates;
 
@@ -92,6 +111,7 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
         description: `The project "${values.projectName}" has been successfully created.`,
       });
       form.reset();
+      setAiPlan(null);
       onFinished?.();
     } catch (error) {
       console.error('Error creating project:', error);
@@ -219,10 +239,38 @@ export function ProjectForm({ project, onFinished }: ProjectFormProps) {
                 />
 
                 <div className="pt-4 space-y-4">
-                    <Button type="button" variant="outline" className="w-full" onClick={handleGeneratePlan}>
-                        <BrainCircuit className="mr-2 h-4 w-4" />
-                        Generate Project Plan with AI
+                    <Button type="button" variant="outline" className="w-full" onClick={handleGeneratePlan} disabled={isAiLoading}>
+                        {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                        {aiPlan ? 'Regenerate Project Plan' : 'Generate Project Plan with AI'}
                     </Button>
+
+                    {isAiLoading && (
+                        <div className="text-center text-muted-foreground text-sm">Generating plan...</div>
+                    )}
+                    
+                    {aiPlan && (
+                        <Card className="bg-secondary/50">
+                            <CardHeader>
+                                <CardTitle className="text-lg">AI Generated Plan</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {aiPlan.phases.map((phase, phaseIndex) => (
+                                    <div key={phaseIndex}>
+                                        <h4 className="font-semibold text-primary">{phase.phaseName}</h4>
+                                        <Separator className="my-1 bg-primary/20" />
+                                        <ul className="text-sm space-y-1 mt-2 text-muted-foreground">
+                                            {phase.tasks.map((task, taskIndex) => (
+                                                <li key={taskIndex} className="flex justify-between">
+                                                    <span>{task.taskName}</span>
+                                                    <span className='font-mono'>{task.durationDays}d</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
 
                 <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>

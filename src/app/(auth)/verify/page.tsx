@@ -17,7 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
-
+import { verifyFace } from '@/ai/flows/facial-verification';
 
 // --- Existing User Data (with new facialVerificationImageUrl) ---
 const allowedUsers: Record<string, { code: string; }> = {
@@ -38,6 +38,11 @@ export default function VerifyPage() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   
+  // Facial Recognition State
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isFaceLoading, setIsFaceLoading] = useState(false);
+
   // Rate limiting
   const [attemptTimestamps, setAttemptTimestamps] = useState<number[]>([]);
   const [isLockedOut, setIsLockedOut] = useState(false);
@@ -45,6 +50,11 @@ export default function VerifyPage() {
 
   const { toast } = useToast();
   const router = useRouter();
+
+  // Fetch all users to find the reference image for facial verification
+  const firestore = useFirestore();
+  const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
+  const { data: allUsers } = useCollection<UserProfile>(usersCollection);
 
   useEffect(() => {
     sessionStorage.removeItem('isVerified');
@@ -81,6 +91,34 @@ export default function VerifyPage() {
     if (recentAttempts.length >= MAX_ATTEMPTS) {
       setIsLockedOut(true);
       setErrorMessage(`Too many failed attempts. Please wait ${LOCKOUT_DURATION_MS / 1000} seconds.`);
+    }
+  };
+  
+  const getCameraPermission = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setHasCameraPermission(false);
+      toast({ variant: 'destructive', title: 'Camera not supported' });
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setHasCameraPermission(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      setHasCameraPermission(false);
+      toast({ variant: 'destructive', title: 'Camera Access Denied' });
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    if (value === 'face' && hasCameraPermission === null) {
+      getCameraPermission();
+    } else if (value === 'key' && videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
     }
   };
 
@@ -130,11 +168,47 @@ export default function VerifyPage() {
   }
 
   const handleFacialVerification = async () => {
-      toast({
-          variant: "destructive",
-          title: "AI Feature Unavailable",
-          description: "This feature has been temporarily disabled."
-      })
+      if (!videoRef.current || isFaceLoading) return;
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      const liveImageDataUrl = canvas.toDataURL('image/jpeg');
+
+      setIsFaceLoading(true);
+      setErrorMessage('');
+
+      try {
+          // Find the first user with a facial verification image to test against.
+          const referenceUser = allUsers?.find(u => u.facialVerificationImageUrl);
+          if (!referenceUser || !referenceUser.facialVerificationImageUrl) {
+              throw new Error("No users are enrolled for facial verification.");
+          }
+          
+          const result = await verifyFace({
+              liveImage: liveImageDataUrl,
+              referenceImage: referenceUser.facialVerificationImageUrl,
+          });
+
+          if (result.isMatch) {
+              setStep('success');
+              sessionStorage.setItem('isVerified', 'true');
+              sessionStorage.setItem('verifiedEmail', referenceUser.email!);
+              toast({ title: 'Facial Verification Successful!', description: `Welcome, ${referenceUser.name}. Redirecting...` });
+              setTimeout(() => router.push('/login'), 1500);
+          } else {
+              setErrorMessage("Face not recognized. Please try again.");
+              handleFailedAttempt();
+          }
+
+      } catch (error: any) {
+          console.error("Facial verification failed:", error);
+          setErrorMessage(error.message || "An error occurred during verification.");
+          handleFailedAttempt();
+      } finally {
+          setIsFaceLoading(false);
+      }
   };
 
   const containerVariants = {
@@ -169,7 +243,7 @@ export default function VerifyPage() {
                     <p className='text-sm text-muted-foreground'>Please try again in {lockoutTimeLeft} seconds.</p>
                   </div>
                 ) : (
-                  <Tabs defaultValue="key" className="w-full">
+                  <Tabs defaultValue="key" className="w-full" onValueChange={handleTabChange}>
                     <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="key"><KeyRound className="mr-2 h-4 w-4" />Secret Key</TabsTrigger>
                       <TabsTrigger value="face"><Camera className="mr-2 h-4 w-4" />Face</TabsTrigger>
@@ -189,7 +263,7 @@ export default function VerifyPage() {
                         </form>
                       ) : step === 'code' && (
                          <form onSubmit={(e) => { e.preventDefault(); handleCodeVerification(); }} className="space-y-4">
-                            <label htmlFor="code" className="block text-sm font-medium text-muted-foreground">Enter your secret code</label>
+                            <label htmlFor="code" className="block text-sm font-medium text-muted-foreground">Enter your secret code for {currentUserEmail}</label>
                             <div className="relative">
                                <KeyRound className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                <Input id="code" type="password" placeholder="••••" value={input} onChange={(e) => setInput(e.target.value)} disabled={isLoading} className={cn("pl-8 pr-10", errorMessage && 'border-destructive')} />
@@ -205,12 +279,15 @@ export default function VerifyPage() {
                     <TabsContent value="face" className="pt-4">
                        <div className="space-y-4">
                          <div className="aspect-video w-full bg-secondary rounded-md overflow-hidden relative flex items-center justify-center">
-                            <Camera className="h-12 w-12 text-muted-foreground" />
+                            <video ref={videoRef} className={cn("w-full h-full object-cover", { 'hidden': !hasCameraPermission })} autoPlay playsInline muted />
+                            {hasCameraPermission === false && <p className="text-destructive-foreground">Camera access denied.</p>}
+                            {hasCameraPermission === null && !isFaceLoading && <Loader2 className="h-8 w-8 animate-spin" />}
                          </div>
-                         <Button onClick={handleFacialVerification} className="w-full" disabled={true}>
-                           <UserCheck className="mr-2 h-4 w-4" />
-                           Verify My Identity (Disabled)
+                         <Button onClick={handleFacialVerification} className="w-full" disabled={!hasCameraPermission || isFaceLoading}>
+                            {isFaceLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
+                           Verify My Identity
                          </Button>
+                         {errorMessage && <p className="text-sm text-destructive text-center">{errorMessage}</p>}
                        </div>
                     </TabsContent>
                   </Tabs>

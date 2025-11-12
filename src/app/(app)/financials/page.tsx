@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { getExchangeRates, ExchangeRates } from '@/lib/currency';
 import { Skeleton } from '@/components/ui/skeleton';
+import { analyzeFinancials } from '@/ai/flows/financial-analyzer';
 
 type FinancialEntryWithId = FinancialEntry & { id: string; };
 
@@ -40,6 +41,7 @@ export default function FinancialsPage() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<any | null>(null);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
+  const [isAiAlertOpen, setIsAiAlertOpen] = useState(false);
 
   useEffect(() => {
     async function fetchRates() {
@@ -119,11 +121,33 @@ export default function FinancialsPage() {
   };
   
   const handleAiAnalysis = async () => {
-    toast({
-        variant: "destructive",
-        title: "AI Feature Unavailable",
-        description: "This feature has been temporarily disabled.",
-    });
+    if (!financials || financials.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Not Enough Data',
+        description: 'There are no financial entries to analyze.',
+      });
+      return;
+    }
+    setIsAiLoading(true);
+    try {
+      const entriesForAI = financials.map(f => ({
+          ...f,
+          date: f.date.toDate().toISOString(),
+      }));
+      const result = await analyzeFinancials({ entries: entriesForAI });
+      setAiAnalysis(result);
+      setIsAiAlertOpen(true);
+    } catch (error) {
+      console.error('AI Analysis Error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'AI Analysis Failed',
+        description: 'Could not get a response from the AI assistant.',
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
   }
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -237,6 +261,40 @@ export default function FinancialsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+       <AlertDialog open={isAiAlertOpen} onOpenChange={setIsAiAlertOpen}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <BrainCircuit className="h-5 w-5 text-primary" />
+              AI Financial Analysis
+            </AlertDialogTitle>
+            {aiAnalysis && (
+              <div className="text-sm text-muted-foreground pt-4 space-y-4">
+                <div>
+                  <h4 className="font-semibold text-foreground mb-1">Summary</h4>
+                  <p>{aiAnalysis.summary}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground mb-2">Key Observations</h4>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {aiAnalysis.keyObservations.map((obs: string, i: number) => <li key={i}>{obs}</li>)}
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground mb-2">Actionable Insights</h4>
+                   <ul className="list-disc pl-5 space-y-1">
+                    {aiAnalysis.actionableInsights.map((insight: string, i: number) => <li key={i}>{insight}</li>)}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setIsAiAlertOpen(false)}>Got it</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

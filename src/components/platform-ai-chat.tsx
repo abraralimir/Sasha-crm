@@ -1,9 +1,8 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Bot, Loader2, Send, X } from 'lucide-react';
-import { getAIResponse } from '@/ai/chat';
+import { useState, useMemo, useCallback } from 'react';
+import { Bot, Loader2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,10 +18,9 @@ import { ScrollArea } from './ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, Timestamp } from 'firebase/firestore';
-import { startOfDay, endOfDay } from 'date-fns';
-import type { Lead, Task, UserProfile, FinancialEntry, AttendanceLog } from '@/lib/types';
-
+import { collection, query, where, Timestamp, limit } from 'firebase/firestore';
+import type { Lead, Task, UserProfile, FinancialEntry, AttendanceLog, Project } from '@/lib/types';
+import { askSasha } from '@/ai/flows/platform-aware-ai-chat';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -37,6 +35,38 @@ export function PlatformAiChat() {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
+
+  // Data fetching hooks for context
+  const leadsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'leads'), limit(20)) : null, [firestore]);
+  const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), limit(20)) : null, [firestore]);
+  const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), limit(20)) : null, [firestore]);
+  const financialsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'financials'), limit(20)) : null, [firestore]);
+  const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users'), limit(20)) : null, [firestore]);
+
+  const { data: leads } = useCollection<Lead>(leadsQuery);
+  const { data: tasks } = useCollection<Task>(tasksQuery);
+  const { data: projects } = useCollection<Project>(projectsQuery);
+  const { data: financials } = useCollection<FinancialEntry>(financialsQuery);
+  const { data: users } = useCollection<UserProfile>(usersQuery);
+
+  const getAppContext = useCallback(() => {
+    const context = {
+      currentUser: {
+        id: user?.uid,
+        name: user?.displayName,
+        email: user?.email,
+      },
+      data: {
+        leads: leads || [],
+        tasks: tasks || [],
+        projects: projects || [],
+        financials: financials || [],
+        users: users || [],
+      },
+    };
+    return JSON.stringify(context, null, 2);
+  }, [user, leads, tasks, projects, financials, users]);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -53,8 +83,9 @@ export function PlatformAiChat() {
     setIsLoading(true);
 
     try {
-      const result = await getAIResponse(currentInput);
-      const assistantMessage: Message = { role: 'assistant', content: result };
+      const appContext = getAppContext();
+      const result = await askSasha({ prompt: currentInput, context: appContext });
+      const assistantMessage: Message = { role: 'assistant', content: result.answer };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('AI chat error:', error);
@@ -63,6 +94,8 @@ export function PlatformAiChat() {
         title: 'Error',
         description: 'Failed to get a response from the AI assistant.',
       });
+      // Add the error message back to the user
+       setMessages((prev) => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please try again." }]);
     } finally {
       setIsLoading(false);
     }
@@ -90,6 +123,7 @@ export function PlatformAiChat() {
                 <div className="text-center text-muted-foreground p-8">
                   <Bot className="mx-auto h-12 w-12" />
                   <p className="mt-2">Start a conversation!</p>
+                  <p className="text-xs mt-4">Examples: "How many new leads do we have?" or "What is the total budget for the 'New Corporate Website' project?"</p>
                 </div>
               )}
               {messages.map((message, index) => (

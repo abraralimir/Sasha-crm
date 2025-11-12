@@ -15,6 +15,18 @@ import { AddLeadForm } from '@/components/dashboard/add-lead-form';
 import type { Lead } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { assessLead } from '@/ai/flows/lead-risk-assessment';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 
 type LeadWithId = Lead & { id: string; lastContacted: Timestamp };
 
@@ -25,6 +37,10 @@ export default function LeadsPage() {
   const { toast } = useToast();
   const [filter, setFilter] = useState('');
   const [isCreateLeadOpen, setCreateLeadOpen] = useState(false);
+  const [isAiAlertOpen, setAiAlertOpen] = useState(false);
+  const [aiAlertContent, setAiAlertContent] = useState<{ title: string; description: React.ReactNode } | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState<string | null>(null);
+
 
   const leadsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -52,12 +68,45 @@ export default function LeadsPage() {
     }
   };
 
-  const handleAiAction = () => {
-      toast({
-          variant: "destructive",
-          title: "AI Feature Unavailable",
-          description: "This feature has been temporarily disabled."
-      })
+  const handleAiAction = async (lead: LeadWithId, action: 'risk' | 'roi') => {
+      setIsAiLoading(lead.id);
+      try {
+          const assessment = await assessLead({
+              contactName: lead.contactName,
+              companyName: lead.companyName,
+              email: lead.email,
+              status: lead.status,
+              potentialRevenue: lead.potentialRevenue,
+              lastContacted: lead.lastContacted?.toDate().toISOString(),
+          });
+          
+          let title, description;
+          if (action === 'risk') {
+              title = `Risk Assessment for ${lead.contactName}`;
+              description = (
+                  <div>
+                      <p className="font-bold text-2xl mb-2">{assessment.riskScore}%</p>
+                      <p className="text-sm text-muted-foreground">{assessment.reasoning}</p>
+                  </div>
+              );
+          } else {
+              title = `ROI Estimate for ${lead.contactName}`;
+              description = (
+                  <div>
+                      <p className="font-bold text-2xl mb-2">{assessment.estimatedRoi}%</p>
+                       <p className="text-sm text-muted-foreground">{assessment.reasoning}</p>
+                  </div>
+              );
+          }
+          setAiAlertContent({ title, description });
+          setAiAlertOpen(true);
+
+      } catch (error) {
+          console.error("AI analysis failed:", error);
+          toast({ variant: 'destructive', title: 'AI Analysis Failed', description: 'Could not get a response from the AI.'})
+      } finally {
+          setIsAiLoading(null);
+      }
   }
 
   const filteredLeads = leads?.filter(lead =>
@@ -154,8 +203,14 @@ export default function LeadsPage() {
                           </Select>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" onClick={handleAiAction}><AlertTriangle className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={handleAiAction}><TrendingUp className="h-4 w-4" /></Button>
+                          {isAiLoading === lead.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin ml-auto" />
+                          ) : (
+                            <>
+                              <Button variant="ghost" size="icon" onClick={() => handleAiAction(lead, 'risk')} title="Assess Risk"><AlertTriangle className="h-4 w-4 text-destructive" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleAiAction(lead, 'roi')} title="Estimate ROI"><TrendingUp className="h-4 w-4 text-green-500" /></Button>
+                            </>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
@@ -173,6 +228,20 @@ export default function LeadsPage() {
         </CardContent>
       </Card>
     </div>
+
+    <AlertDialog open={isAiAlertOpen} onOpenChange={setAiAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2"><BrainCircuit className="h-5 w-5 text-primary"/>{aiAlertContent?.title}</AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                    <div className="pt-2">{aiAlertContent?.description}</div>
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setAiAlertOpen(false)}>Close</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
