@@ -1,6 +1,6 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
-import {next} from '@genkit-ai/next';
+import next from '@genkit-ai/next';
 
 // This file configures the Genkit AI instance.
 // It is NOT a server action file and should not have 'use server'.
