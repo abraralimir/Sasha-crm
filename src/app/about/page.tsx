@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -20,7 +19,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { motion } from 'framer-motion';
 
 const featureSections = {
   intelligence: {
@@ -107,17 +105,6 @@ const upcomingFeatures = [
   },
 ];
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-    },
-  },
-};
-
 export default function AboutPage() {
   return (
     <div className="dark bg-background text-foreground min-h-screen">
@@ -130,34 +117,24 @@ export default function AboutPage() {
       </header>
 
       <main className="container mx-auto px-4 py-16 md:py-24 text-center">
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+        <h1
           className="text-4xl md:text-6xl font-headline tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-primary via-blue-400 to-primary"
         >
           The Future of Intelligent CRM
-        </motion.h1>
-        <motion.p
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ duration: 0.6, delay: 0.2 }}
+        </h1>
+        <p
            className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-muted-foreground"
         >
           SashaLeads AI is not just a CRM; it's an intelligent growth engine.
           We fuse cutting-edge AI automation with a sleek, intuitive interface
           to empower your team, streamline your workflow, and amplify your
           results.
-        </motion.p>
+        </p>
       </main>
 
       {Object.values(featureSections).map((section, sectionIndex) => (
         <section key={section.title} className="container mx-auto px-4 py-12 md:py-20">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={cardVariants}
+          <div
             className="flex items-center justify-center gap-4 mb-12"
           >
              <div className="w-16 h-px bg-border"></div>
@@ -166,15 +143,11 @@ export default function AboutPage() {
                   {section.title}
               </h2>
              <div className="w-16 h-px bg-border"></div>
-          </motion.div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {section.features.map((feature) => (
-              <motion.div
+              <div
                 key={feature.title}
-                variants={cardVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
               >
                 <Card
                   className="bg-card/50 backdrop-blur-sm border-border/50 text-center h-full transform hover:-translate-y-1 transition-transform duration-300"
@@ -191,7 +164,7 @@ export default function AboutPage() {
                     <p>{feature.description}</p>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
         </section>
@@ -204,12 +177,8 @@ export default function AboutPage() {
         </h2>
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           {upcomingFeatures.map((feature) => (
-             <motion.div
+             <div
                 key={feature.title}
-                variants={cardVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.5 }}
               >
                 <div
                     className="p-6 border border-dashed border-border/30 rounded-lg bg-card/20 h-full"
@@ -221,7 +190,7 @@ export default function AboutPage() {
                     {feature.description}
                     </p>
                 </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </section>

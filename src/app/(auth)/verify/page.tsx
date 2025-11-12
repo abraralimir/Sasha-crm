@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -9,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { LogoIcon } from '@/components/logo';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -69,8 +67,11 @@ export default function VerifyPage() {
     sessionStorage.removeItem('isVerified');
     sessionStorage.removeItem('verifiedEmail');
     const timer = setTimeout(() => setStep('verification'), 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    return () => {
+      clearTimeout(timer);
+      stopCamera();
+    };
+  }, [stopCamera]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -175,7 +176,7 @@ export default function VerifyPage() {
   }
 
   const handleFacialVerification = async () => {
-      if (!videoRef.current || isFaceLoading) return;
+      if (!videoRef.current || isFaceLoading || isLockedOut) return;
       
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
@@ -187,7 +188,6 @@ export default function VerifyPage() {
       setErrorMessage('');
 
       try {
-          // Find the first user with a facial verification image to test against.
           const referenceUser = allUsers?.find(u => u.facialVerificationImageUrl);
           if (!referenceUser || !referenceUser.facialVerificationImageUrl) {
               throw new Error("No users are enrolled for facial verification.");
@@ -219,97 +219,103 @@ export default function VerifyPage() {
       }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
-  };
+  const renderContent = () => {
+    switch (step) {
+        case 'start':
+            return (
+                <div className="text-center text-muted-foreground">
+                    <p>Initializing secure connection...</p>
+                </div>
+            );
+
+        case 'verification':
+        case 'code':
+        case 'denied':
+            return (
+                <div>
+                    {isLockedOut ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-2 text-center text-destructive">
+                        <ShieldAlert className="h-8 w-8" />
+                        <p className='font-bold'>Too Many Failed Attempts</p>
+                        <p className='text-sm text-muted-foreground'>Please try again in {lockoutTimeLeft} seconds.</p>
+                    </div>
+                    ) : (
+                    <Tabs defaultValue="key" className="w-full" onValueChange={handleTabChange}>
+                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="key"><KeyRound className="mr-2 h-4 w-4" />Secret Key</TabsTrigger>
+                        <TabsTrigger value="face"><Camera className="mr-2 h-4 w-4" />Face</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="key" className="pt-4">
+                        {step === 'verification' || step === 'denied' ? (
+                            <form onSubmit={(e) => { e.preventDefault(); handleKeyVerification(); }} className="space-y-4">
+                            <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">Enter your email address</label>
+                            <div className="relative">
+                                <Input id="email" type="email" placeholder="name@example.com" value={input} onChange={(e) => setInput(e.target.value)} disabled={isLoading || step === 'denied'} className={cn(errorMessage && 'border-destructive')} />
+                                <Button type="submit" size="icon" className='absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full' disabled={isLoading || !input.trim()}>
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                            {(step === 'denied' || (step === 'verification' && errorMessage)) && <p className="text-sm text-destructive text-center">{errorMessage}</p>}
+                            </form>
+                        ) : step === 'code' && (
+                            <form onSubmit={(e) => { e.preventDefault(); handleCodeVerification(); }} className="space-y-4">
+                                <label htmlFor="code" className="block text-sm font-medium text-muted-foreground">Enter your secret code for {currentUserEmail}</label>
+                                <div className="relative">
+                                <KeyRound className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input id="code" type="password" placeholder="••••" value={input} onChange={(e) => setInput(e.target.value)} disabled={isLoading} className={cn("pl-8 pr-10", errorMessage && 'border-destructive')} />
+                                <Button type="submit" size="icon" className='absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full' disabled={isLoading || !input.trim()}>
+                                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                                </Button>
+                                </div>
+                                {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
+                            </form>
+                        )}
+                        </TabsContent>
+                        
+                        <TabsContent value="face" className="pt-4">
+                        <div className="space-y-4">
+                            <div className="aspect-video w-full bg-secondary rounded-md overflow-hidden relative flex items-center justify-center">
+                                <video ref={videoRef} className={cn("w-full h-full object-cover", { 'hidden': !hasCameraPermission })} autoPlay playsInline muted />
+                                {hasCameraPermission === false && <p className="text-destructive-foreground">Camera access denied.</p>}
+                                {hasCameraPermission === null && !isFaceLoading && <Loader2 className="h-8 w-8 animate-spin" />}
+                            </div>
+                            <Button onClick={handleFacialVerification} className="w-full" disabled={!hasCameraPermission || isFaceLoading || isLockedOut}>
+                                {isFaceLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
+                            Verify My Identity
+                            </Button>
+                            {errorMessage && <p className="text-sm text-destructive text-center">{errorMessage}</p>}
+                        </div>
+                        </TabsContent>
+                    </Tabs>
+                    )}
+                </div>
+            );
+
+        case 'success':
+            return (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <p className='text-muted-foreground'>Verification complete. Redirecting...</p>
+                </div>
+            );
+        default:
+            return null;
+    }
+  }
 
   return (
     <>
       <Card className="w-full max-w-md border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
         <CardHeader className="text-center">
-          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, duration: 0.4 }}>
+          <div className="mx-auto">
             <LogoIcon className="mx-auto h-12 w-12 text-primary" />
-          </motion.div>
+          </div>
           <CardTitle className="text-2xl font-headline tracking-tight">Sasha AI Verification</CardTitle>
           <CardDescription>Please verify your access to proceed.</CardDescription>
         </CardHeader>
         <CardContent className="min-h-[22rem] flex flex-col justify-center">
-          <AnimatePresence mode="wait">
-            {step === 'start' && (
-              <motion.div key="start" variants={containerVariants} initial="hidden" animate="visible" exit="hidden" className="text-center text-muted-foreground">
-                <p>Initializing secure connection...</p>
-              </motion.div>
-            )}
-
-            {(step === 'verification' || step === 'code' || step === 'denied') && (
-              <motion.div key="verification-options" variants={containerVariants} initial="hidden" animate="visible" exit="hidden">
-                {isLockedOut ? (
-                  <div className="flex flex-col items-center justify-center h-full gap-2 text-center text-destructive">
-                    <ShieldAlert className="h-8 w-8" />
-                    <p className='font-bold'>Too Many Failed Attempts</p>
-                    <p className='text-sm text-muted-foreground'>Please try again in {lockoutTimeLeft} seconds.</p>
-                  </div>
-                ) : (
-                  <Tabs defaultValue="key" className="w-full" onValueChange={handleTabChange}>
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="key"><KeyRound className="mr-2 h-4 w-4" />Secret Key</TabsTrigger>
-                      <TabsTrigger value="face"><Camera className="mr-2 h-4 w-4" />Face</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="key" className="pt-4">
-                      {step === 'verification' || step === 'denied' ? (
-                        <form onSubmit={(e) => { e.preventDefault(); handleKeyVerification(); }} className="space-y-4">
-                          <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">Enter your email address</label>
-                          <div className="relative">
-                            <Input id="email" type="email" placeholder="name@example.com" value={input} onChange={(e) => setInput(e.target.value)} disabled={isLoading || step === 'denied'} className={cn(errorMessage && 'border-destructive')} />
-                            <Button type="submit" size="icon" className='absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full' disabled={isLoading || !input.trim()}>
-                              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                          {(step === 'denied' || (step === 'verification' && errorMessage)) && <p className="text-sm text-destructive text-center">{errorMessage}</p>}
-                        </form>
-                      ) : step === 'code' && (
-                         <form onSubmit={(e) => { e.preventDefault(); handleCodeVerification(); }} className="space-y-4">
-                            <label htmlFor="code" className="block text-sm font-medium text-muted-foreground">Enter your secret code for {currentUserEmail}</label>
-                            <div className="relative">
-                               <KeyRound className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                               <Input id="code" type="password" placeholder="••••" value={input} onChange={(e) => setInput(e.target.value)} disabled={isLoading} className={cn("pl-8 pr-10", errorMessage && 'border-destructive')} />
-                               <Button type="submit" size="icon" className='absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full' disabled={isLoading || !input.trim()}>
-                                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                               </Button>
-                            </div>
-                            {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
-                         </form>
-                      )}
-                    </TabsContent>
-                    
-                    <TabsContent value="face" className="pt-4">
-                       <div className="space-y-4">
-                         <div className="aspect-video w-full bg-secondary rounded-md overflow-hidden relative flex items-center justify-center">
-                            <video ref={videoRef} className={cn("w-full h-full object-cover", { 'hidden': !hasCameraPermission })} autoPlay playsInline muted />
-                            {hasCameraPermission === false && <p className="text-destructive-foreground">Camera access denied.</p>}
-                            {hasCameraPermission === null && !isFaceLoading && <Loader2 className="h-8 w-8 animate-spin" />}
-                         </div>
-                         <Button onClick={handleFacialVerification} className="w-full" disabled={!hasCameraPermission || isFaceLoading}>
-                            {isFaceLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
-                           Verify My Identity
-                         </Button>
-                         {errorMessage && <p className="text-sm text-destructive text-center">{errorMessage}</p>}
-                       </div>
-                    </TabsContent>
-                  </Tabs>
-                )}
-              </motion.div>
-            )}
-
-            {step === 'success' && (
-              <motion.div key="success" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center h-full gap-2 text-center">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <p className='text-muted-foreground'>Verification complete. Redirecting...</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            {renderContent()}
         </CardContent>
       </Card>
       <div className="mt-6 text-center">
