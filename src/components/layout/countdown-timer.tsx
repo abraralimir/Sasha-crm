@@ -2,18 +2,21 @@
 
 import { useState, useEffect } from 'react';
 
-export function CountdownTimer({ hours }: { hours: number }) {
+export function CountdownTimer({ hours, onComplete }: { hours: number; onComplete: () => void; }) {
   const [timeLeft, setTimeLeft] = useState(hours * 60 * 60);
 
   useEffect(() => {
-    if (timeLeft <= 0) return;
+    if (timeLeft <= 0) {
+      onComplete();
+      return;
+    }
 
     const intervalId = setInterval(() => {
       setTimeLeft(prevTimeLeft => prevTimeLeft - 1);
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [timeLeft]);
+  }, [timeLeft, onComplete]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
