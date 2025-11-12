@@ -41,7 +41,7 @@ export function PlatformAiChat() {
   const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), limit(20)) : null, [firestore]);
   const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), limit(20)) : null, [firestore]);
   const financialsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'financials'), limit(20)) : null, [firestore]);
-  const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users'), limit(20)) : null, [firestore]);
+  const usersQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'users'), limit(20)) : null, [firestore]);
 
   const { data: leads } = useCollection<Lead>(leadsQuery);
   const { data: tasks } = useCollection<Task>(tasksQuery);
