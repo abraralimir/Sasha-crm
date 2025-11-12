@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Loader2, Send, Paperclip, Sparkles, EllipsisVertical, File, ListPlus } from 'lucide-react';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, orderBy, getDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Timestamp } from 'firebase/firestore';
-import type { UserProfile, ChatGroup, ChatMessage, NotificationRequest } from '@/lib/types';
+import type { UserProfile, ChatGroup, ChatMessage } from '@/lib/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +23,6 @@ import {
 import { AddTaskForm } from '../dashboard/add-task-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { enableAIChatWithFileContext } from '@/ai/flows/ai-chat-with-file-context';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 export function GroupChat({ groupId }: { groupId: string }) {
@@ -85,19 +84,23 @@ export function GroupChat({ groupId }: { groupId: string }) {
     setInput(e.target.value);
   };
   
-  const triggerNotificationRequest = (messageText: string) => {
-    if (!firestore || !user || !group) return;
-
-    const requestPayload: Omit<NotificationRequest, 'id'> = {
-      senderId: user.uid,
-      senderName: user.displayName || 'A team member',
-      groupId: group.id,
-      groupName: group.name,
-      messageText: messageText.substring(0, 100), // Truncate message
-    };
+  const createInAppNotifications = (group: ChatGroup, messageText: string) => {
+    if (!firestore || !user) return;
     
-    addDocumentNonBlocking(collection(firestore, 'notificationRequests'), requestPayload);
-  };
+    group.members.forEach(memberId => {
+        if (memberId !== user.uid) { // Don't notify the sender
+            const notificationPayload = {
+                title: `New message in ${group.name}`,
+                message: `${user.displayName}: ${messageText.substring(0, 100)}`,
+                link: `/chat/${group.id}`,
+                read: false,
+                createdAt: serverTimestamp(),
+            };
+            const notificationRef = collection(firestore, 'users', memberId, 'notifications');
+            addDocumentNonBlocking(notificationRef, notificationPayload);
+        }
+    });
+  }
 
   const sendMessage = (messagePayload: Omit<ChatMessage, 'id' | 'timestamp' | 'groupId'> & { timestamp: any }) => {
     if (!messagesCollection) return;
@@ -107,8 +110,8 @@ export function GroupChat({ groupId }: { groupId: string }) {
 
     addDoc(messagesCollection, payloadWithGroup)
       .then(() => {
-          if (group) { // Only trigger notifications for specific groups
-            triggerNotificationRequest(messagePayload.text);
+          if (group) { // Only create notifications for specific groups
+            createInAppNotifications(group, messagePayload.text);
           }
       })
       .catch((error) => {
@@ -328,5 +331,3 @@ export function GroupChat({ groupId }: { groupId: string }) {
     </>
   );
 }
-
-    
