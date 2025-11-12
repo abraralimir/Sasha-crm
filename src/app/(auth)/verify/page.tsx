@@ -25,6 +25,7 @@ const allowedUsers: Record<string, { code: string; }> = {
   'saleem@bitstek.io': { code: '0776' },
   'adil@bitstek.io': { code: '0779' },
   'ismail@sbm.com': { code: '0071' },
+  'hussainhamdan@sbm.com': { code: '0072' },
 };
 
 const MAX_ATTEMPTS = 5;
