@@ -35,6 +35,7 @@ export const metadata: Metadata = {
     description: 'The Future of Intelligent CRM',
     images: ['/sasha-og.png'],
   },
+  manifest: '/manifest.json',
 };
 
 
