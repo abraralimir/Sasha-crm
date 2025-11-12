@@ -36,12 +36,12 @@ export function PlatformAiChat() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  // Data fetching hooks for context
-  const leadsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'leads'), limit(10)) : null, [firestore]);
-  const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), limit(10)) : null, [firestore]);
-  const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), limit(10)) : null, [firestore]);
-  const financialsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'financials'), limit(10)) : null, [firestore]);
-  const usersQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'users'), limit(10)) : null, [firestore]);
+  // Data fetching hooks for context - limited to 5 records each to reduce token usage
+  const leadsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'leads'), limit(5)) : null, [firestore]);
+  const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), limit(5)) : null, [firestore]);
+  const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), limit(5)) : null, [firestore]);
+  const financialsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'financials'), limit(5)) : null, [firestore]);
+  const usersQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'users'), limit(5)) : null, [firestore]);
 
   const { data: leads } = useCollection<Lead>(leadsQuery);
   const { data: tasks } = useCollection<Task>(tasksQuery);
