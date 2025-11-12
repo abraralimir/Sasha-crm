@@ -11,8 +11,8 @@ export function OneSignalProvider({ children }: { children: React.ReactNode }) {
     async function initializeOneSignal() {
       if (typeof window !== 'undefined') {
         await OneSignal.init({
-          // IMPORTANT: Replace with your OneSignal App ID
-          appId: 'YOUR_ONESIGNAL_APP_ID', 
+          appId: '775b6ea7-e4c6-4dd0-a528-d87f30055df7',
+          safari_web_id: 'web.onesignal.auto.424123c9-df63-4140-aac8-764c37d1fc19',
           allowLocalhostAsSecureOrigin: true,
         });
 

@@ -35,59 +35,49 @@ exports.sendChatNotification = functions.firestore
       return null;
     }
 
-    // 3. Get the FCM device tokens for each recipient
-    const tokens = [];
-    for (const userId of recipientIds) {
-      const userDoc = await admin.firestore().collection("users").doc(userId).get();
-      if (userDoc.exists) {
-          const userData = userDoc.data();
-          if (userData && userData.fcmToken) {
-            tokens.push(userData.fcmToken);
-          }
-      }
-    }
+    // 3. This part is now handled by OneSignal by setting the external_user_id
 
-    if (tokens.length === 0) {
-      console.log("No FCM tokens found for recipients.");
-      return null;
-    }
-
-    // 4. Define the push notification payload
-    const payload = {
-      notification: {
-        title: `New message in ${request.groupName}`,
-        body: `${request.senderName}: ${request.messageText}`,
-        icon: "/icons/icon-192x192.png",
+    // 4. Define the OneSignal notification payload
+    const notification = {
+      contents: {
+        en: `${request.senderName}: ${request.messageText}`,
       },
-      webpush: {
-          fcm_options: {
-            link: `/chat/${request.groupId}`
-          }
-      }
+      headings: {
+        en: `New message in ${request.groupName}`
+      },
+      // Send to users by their user ID in your system
+      include_external_user_ids: recipientIds,
+      // Fallback for devices that haven't been associated with a user ID
+      // included_segments: ["Subscribed Users"], 
+      
+      // URL to open when the notification is clicked
+      web_url: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com/chat/${request.groupId}`,
+      
+      // Icon
+      web_push_icon: `https://${process.env.GCLOUD_PROJECT}.firebaseapp.com/icons/icon-192x192.png`,
     };
 
-    // 5. Send the notifications
+    // 5. Send the notification using the OneSignal REST API
     try {
-      console.log(`Sending notification to ${tokens.length} devices.`);
-      const response = await admin.messaging().sendToDevice(tokens, payload);
-      console.log("Successfully sent message:", response);
-      
-      // Optional: Clean up tokens that are no longer valid
-      response.results.forEach((result, index) => {
-        const error = result.error;
-        if (error) {
-          console.error('Failure sending notification to', tokens[index], error);
-          // Cleanup the invalid token
-          if (error.code === 'messaging/invalid-registration-token' ||
-              error.code === 'messaging/registration-token-not-registered') {
-            // Unregister the token from your users' database
-          }
-        }
+      const response = await fetch("https://onesignal.com/api/v1/notifications", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          // IMPORTANT: You need to add your OneSignal REST API Key to your environment variables
+          'Authorization': `Basic ${functions.config().onesignal.api_key}`,
+        },
+        body: JSON.stringify({
+            ...notification,
+            app_id: functions.config().onesignal.app_id,
+        }),
       });
-
+      
+      console.log("OneSignal response:", await response.json());
       return response;
+
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Error sending OneSignal notification:", error);
       return null;
     }
   });
+
