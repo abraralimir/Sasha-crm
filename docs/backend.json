@@ -555,7 +555,7 @@
       "schema": {
         "$ref": "#/entities/FinancialEntry"
       },
-      "description": "Stores financial entries. All authenticated users can manage financials."
+      "description": "Stores financial entries. All authenticated. All authenticated users can manage financials."
     },
     "/users/{userId}/notifications/{notificationId}": {
       "schema": {

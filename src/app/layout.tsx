@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase';
 import { cn } from '@/lib/utils';
 import { Analytics } from '@vercel/analytics/next';
+import { OneSignalProvider } from '@/components/one-signal-provider';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
@@ -63,7 +64,9 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased', 'dark')}>
         <FirebaseClientProvider>
-          {children}
+          <OneSignalProvider>
+            {children}
+          </OneSignalProvider>
         </FirebaseClientProvider>
         <Toaster />
         <Analytics />
