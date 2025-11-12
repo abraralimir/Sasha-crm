@@ -1,4 +1,4 @@
-
+'use server';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 import {config} from 'dotenv';
@@ -12,5 +12,5 @@ export const ai = genkit({
       apiVersion: ['v1', 'v1beta'],
     }),
   ],
-  model: 'models/gemini-2.5-flash', // Default model for all flows unless overridden
+  model: 'gemini-1.5-flash', // Default model for all flows unless overridden
 });
