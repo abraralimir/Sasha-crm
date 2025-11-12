@@ -1,14 +1,21 @@
+'use server';
+/**
+ * @fileoverview This file configures the Genkit AI instance.
+ * It sets up the Google AI plugin and defines the default model
+ * for all generative AI operations across the application.
+ */
+
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 import next from '@genkit-ai/next';
-
-// This file configures the Genkit AI instance.
-// It is NOT a server action file and should not have 'use server'.
 
 if (!process.env.GEMINI_API_KEY) {
   throw new Error('GEMINI_API_KEY environment variable is not set.');
 }
 
+// Initialize Genkit with the Google AI plugin.
+// The default model is set to 'gemini-2.5-flash', which is a stable and
+// performant choice for web applications in the free tier.
 export const ai = genkit({
   plugins: [
     next(),
@@ -16,5 +23,5 @@ export const ai = genkit({
       apiKey: process.env.GEMINI_API_KEY,
     }),
   ],
-  model: 'gemini-2.0-flash-001', // Use the specific, stable model ID
+  model: 'gemini-2.5-flash', // Use the reliable short alias
 });
