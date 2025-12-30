@@ -27,6 +27,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
     setSecurityLockActive(true);
   }, []);
 
+  const handleTimerEnd = useCallback(() => {
+    setSecurityLockActive(false);
+  }, []);
+
   useDevToolsWatcher(handleDevToolsOpen);
 
   useEffect(() => {
@@ -45,7 +49,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   return (
       <SidebarProvider>
-        <SecurityOverlay isActive={isSecurityLockActive} onTimerEnd={() => setSecurityLockActive(false)} />
+        <SecurityOverlay isActive={isSecurityLockActive} onTimerEnd={handleTimerEnd} />
         <SidebarNav />
         <SidebarInset>
           <Header />
