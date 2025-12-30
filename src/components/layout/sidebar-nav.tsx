@@ -38,6 +38,8 @@ const mainMenuItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { user } = useUser();
+  const isAdmin = user?.email === 'alimirabrar@gmail.com';
 
   return (
     <Sidebar>
@@ -51,20 +53,23 @@ export function SidebarNav() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {mainMenuItems.map(({ href, label, icon: Icon }) => (
-            <SidebarMenuItem key={href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith(href)}
-                tooltip={label}
-              >
-                <Link href={href}>
-                  <Icon />
-                  <span>{label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {mainMenuItems.map(({ href, label, icon: Icon, admin }) => {
+            if (admin && !isAdmin) return null;
+            return (
+                <SidebarMenuItem key={href}>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname === href || (href !== '/dashboard' && pathname.startsWith(href))}
+                    tooltip={label}
+                >
+                    <Link href={href}>
+                    <Icon />
+                    <span>{label}</span>
+                    </Link>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+            )
+          })}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">

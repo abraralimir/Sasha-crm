@@ -99,7 +99,7 @@ export default function DashboardPage() {
       {
         title: "New Leads (30d)",
         value: `+${newLeadsCount}`,
-        icon: <Users className="text-blue-500" />,
+        icon: <Users className="text-primary" />,
       },
       {
         title: "Active Tasks",
@@ -109,7 +109,7 @@ export default function DashboardPage() {
       {
         title: "In Progress Projects",
         value: `${inProgressProjectsCount}`,
-        icon: <Layers className="text-purple-500" />,
+        icon: <Layers className="text-indigo-400" />,
       },
     ];
   }, [leads, tasks, projects, financials, exchangeRates]);
@@ -117,15 +117,15 @@ export default function DashboardPage() {
   const isLoading = leadsLoading || tasksLoading || projectsLoading || financialsLoading || !exchangeRates;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-headline tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground mt-1 md:mt-0">
           An overview of your CRM, with real-time data.
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => (
                 <Card key={i}>
@@ -146,12 +146,12 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="lg:col-span-2 space-y-6 md:space-y-8">
           <RegisteredUsers />
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
           <AddTaskForm />
           <AddLeadForm />
         </div>

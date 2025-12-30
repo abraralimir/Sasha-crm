@@ -80,17 +80,17 @@ export default function ProjectsPage() {
 
   return (
     <>
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Projects</h1>
-          <p className="text-muted-foreground">
-            Manage your client projects from start to finish.
-          </p>
+            <h1 className="text-2xl md:text-3xl font-bold">Projects</h1>
+            <p className="text-muted-foreground mt-1">
+                Manage your client projects from start to finish.
+            </p>
         </div>
         <Dialog open={isCreateProjectOpen} onOpenChange={setCreateProjectOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="mt-4 md:mt-0">
               <PlusCircle className="mr-2 h-4 w-4" />
               Create Project
             </Button>
@@ -107,33 +107,23 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Projects</CardTitle>
-          <CardDescription>
-            A list of all active and completed projects. Right-click for options.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-64" />)}
-             </div>
-          ) : projects && projects.length > 0 ? (
+        {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.sort((a,b) => b.startDate.toMillis() - a.startDate.toMillis()).map((project) => (
-                <ProjectCard key={project.id} project={project} onDelete={handleDeleteRequest} />
-              ))}
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-64" />)}
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-lg">
-                <Layers className="h-12 w-12 text-muted-foreground" />
-                <p className="mt-4 text-muted-foreground">No projects found.</p>
-                <p className="text-sm text-muted-foreground">Get started by creating a new project.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        ) : projects && projects.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.sort((a,b) => b.startDate.toMillis() - a.startDate.toMillis()).map((project) => (
+            <ProjectCard key={project.id} project={project} onDelete={handleDeleteRequest} />
+            ))}
+        </div>
+        ) : (
+        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-lg bg-card/50">
+            <Layers className="h-12 w-12 text-muted-foreground" />
+            <p className="mt-4 text-muted-foreground">No projects found.</p>
+            <p className="text-sm text-muted-foreground">Get started by creating a new project.</p>
+        </div>
+        )}
     </div>
 
     <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>

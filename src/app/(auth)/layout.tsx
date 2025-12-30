@@ -51,7 +51,7 @@ export default function AuthLayout({
   // If all checks are complete, render the auth pages.
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 antialiased dark">
-      <div className="absolute top-8 left-8">
+      <div className="absolute top-6 left-6 md:top-8 md:left-8">
         <Logo />
       </div>
       <div className="absolute inset-0 -z-10 h-full w-full bg-background bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]">

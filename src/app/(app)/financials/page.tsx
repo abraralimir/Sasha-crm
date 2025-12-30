@@ -161,13 +161,13 @@ export default function FinancialsPage() {
 
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Financials</h1>
-          <p className="text-muted-foreground">Track and analyze your income, expenses, and investments.</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Financials</h1>
+          <p className="text-muted-foreground mt-1">Track and analyze your income, expenses, and investments.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-4 md:mt-0">
             <Button onClick={handleAiAnalysis} disabled={isAiLoading || !financials || financials.length === 0}>
                 {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
                 Analyze with AI
@@ -179,7 +179,7 @@ export default function FinancialsPage() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiCard title="Total Revenue (USD)" value={renderKpiValue(financialSummary.totalRevenue)} icon={<TrendingUp className="text-green-500" />} />
         <KpiCard title="Total Expenses (USD)" value={renderKpiValue(financialSummary.totalExpenses)} icon={<TrendingDown className="text-red-500" />} />
         <KpiCard title="Net Profit/Loss (USD)" value={renderKpiValue(financialSummary.netProfit)} icon={<DollarSign className={financialSummary.netProfit >= 0 ? "text-primary" : "text-destructive"} />} />
@@ -200,8 +200,8 @@ export default function FinancialsPage() {
                   <TableRow>
                     <TableHead>Description</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead className="hidden sm:table-cell">Category</TableHead>
+                    <TableHead className="hidden md:table-cell">Date</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="w-[100px] text-right">Actions</TableHead>
                   </TableRow>
@@ -212,8 +212,8 @@ export default function FinancialsPage() {
                       <TableRow key={entry.id}>
                         <TableCell className="font-medium">{entry.description}</TableCell>
                         <TableCell>{entry.type}</TableCell>
-                        <TableCell>{entry.category}</TableCell>
-                        <TableCell>{format(entry.date.toDate(), 'PPP')}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{entry.category}</TableCell>
+                        <TableCell className="hidden md:table-cell">{format(entry.date.toDate(), 'PPP')}</TableCell>
                         <TableCell className={`text-right font-mono ${entry.type === 'Income' ? 'text-green-500' : 'text-red-500'}`}>
                           {entry.type === 'Income' ? '+' : '-'}{formatCurrency(entry.amount, entry.currency)}
                         </TableCell>
