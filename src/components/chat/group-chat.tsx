@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Loader2, Send, Paperclip, Sparkles, EllipsisVertical, File, ListPlus, Trash2, Edit } from 'lucide-react';
+import { Loader2, Send, Paperclip, Sparkles, EllipsisVertical, File, ListPlus, Trash2, Edit, AlertTriangle } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, orderBy, getDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
