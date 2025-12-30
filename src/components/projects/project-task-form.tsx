@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as z from 'zod';
@@ -8,11 +7,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { useFirestore, useCollection, useMemoFirebase, useUser, addDocumentNonBlocking } from '@/firebase';
-import { collection, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { collection, serverTimestamp, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { UserProfile } from '@/lib/types';
+import { UserProfile, ProjectTask } from '@/lib/types';
 import { Textarea } from '../ui/textarea';
 import { useEffect } from 'react';
 import { ScrollArea } from '../ui/scroll-area';
@@ -26,11 +25,11 @@ const taskFormSchema = z.object({
 
 type ProjectTaskFormProps = {
   projectId: string;
-  defaultTitle?: string;
+  task?: ProjectTask | null;
   onTaskCreated?: () => void;
 }
 
-export function ProjectTaskForm({ projectId, defaultTitle, onTaskCreated }: ProjectTaskFormProps) {
+export function ProjectTaskForm({ projectId, task, onTaskCreated }: ProjectTaskFormProps) {
   const { user: currentUser } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -45,7 +44,7 @@ export function ProjectTaskForm({ projectId, defaultTitle, onTaskCreated }: Proj
   const form = useForm<z.infer<typeof taskFormSchema>>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-      title: defaultTitle || '',
+      title: '',
       description: '',
       status: 'To Do',
       assigneeId: '',
@@ -53,10 +52,22 @@ export function ProjectTaskForm({ projectId, defaultTitle, onTaskCreated }: Proj
   });
 
   useEffect(() => {
-    if (defaultTitle) {
-      form.setValue('title', defaultTitle);
+    if (task) {
+      form.reset({
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        assigneeId: task.assigneeId,
+      });
+    } else {
+        form.reset({
+            title: '',
+            description: '',
+            status: 'To Do',
+            assigneeId: '',
+        });
     }
-  }, [defaultTitle, form]);
+  }, [task, form]);
 
   const onSubmit = async (values: z.infer<typeof taskFormSchema>) => {
     if (!firestore || !currentUser || !projectId) return;
@@ -74,41 +85,49 @@ export function ProjectTaskForm({ projectId, defaultTitle, onTaskCreated }: Proj
       assigneeId: values.assigneeId,
       assigneeName: selectedUser.name || '',
       assigneeAvatar: selectedUser.profilePictureUrl || '',
-      createdAt: serverTimestamp(),
+      createdAt: task ? task.createdAt : serverTimestamp(),
     };
-
+    
     const projectTasksCollection = collection(firestore, 'projects', projectId, 'tasks');
-    addDocumentNonBlocking(projectTasksCollection, taskPayload)
-      .then(() => {
-        toast({
-          title: 'Project Task Created',
-          description: `Task "${values.title}" has been assigned.`,
-        });
 
-        // Notify the assigned user if it's not the current user
-        if (currentUser.uid !== selectedUser.id) {
-          const notificationPayload = {
-            title: 'New Project Task',
-            message: `You were assigned: "${values.title}".`,
-            link: '/project-tasks',
-            read: false,
-            createdAt: serverTimestamp(),
-          };
-          const notificationRef = collection(firestore, 'users', selectedUser.id, 'notifications');
-          addDocumentNonBlocking(notificationRef, notificationPayload);
+    try {
+        if (task) {
+            const taskRef = doc(projectTasksCollection, task.id);
+            await setDoc(taskRef, taskPayload, { merge: true });
+            toast({
+                title: 'Project Task Updated',
+                description: `Task "${values.title}" has been updated.`,
+            });
+        } else {
+            await addDoc(projectTasksCollection, taskPayload);
+            toast({
+                title: 'Project Task Created',
+                description: `Task "${values.title}" has been assigned.`,
+            });
+
+             // Notify the assigned user if it's not the current user
+            if (currentUser.uid !== selectedUser.id) {
+                const notificationPayload = {
+                    title: 'New Project Task',
+                    message: `You were assigned: "${values.title}".`,
+                    link: '/project-tasks',
+                    read: false,
+                    createdAt: serverTimestamp(),
+                };
+                const notificationRef = collection(firestore, 'users', selectedUser.id, 'notifications');
+                addDoc(notificationRef, notificationPayload);
+            }
         }
-
-        form.reset({ title: '', description: '', status: 'To Do', assigneeId: '' });
         onTaskCreated?.();
-      })
-      .catch((error) => {
+
+    } catch (error) {
         console.error('Error creating project task:', error);
         toast({
           variant: 'destructive',
           title: 'Error',
           description: 'Failed to create project task.',
         });
-      });
+    }
   };
   
   const formContent = (
@@ -190,7 +209,7 @@ export function ProjectTaskForm({ projectId, defaultTitle, onTaskCreated }: Proj
           {form.formState.isSubmitting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            'Create Task'
+            task ? 'Save Changes' : 'Create Task'
           )}
         </Button>
       </form>

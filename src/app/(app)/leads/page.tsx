@@ -1,10 +1,9 @@
-
 'use client';
 import { useState } from 'react';
-import { collection, doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { Loader2, PlusCircle, BrainCircuit, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Loader2, PlusCircle, BrainCircuit, TrendingUp, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -26,6 +25,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 
 type LeadWithId = Lead & { id: string; lastContacted: Timestamp };
@@ -36,7 +41,10 @@ export default function LeadsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [filter, setFilter] = useState('');
-  const [isCreateLeadOpen, setCreateLeadOpen] = useState(false);
+  const [isFormOpen, setFormOpen] = useState(false);
+  const [leadToEdit, setLeadToEdit] = useState<LeadWithId | null>(null);
+  const [leadToDelete, setLeadToDelete] = useState<LeadWithId | null>(null);
+  const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [isAiAlertOpen, setAiAlertOpen] = useState(false);
   const [aiAlertContent, setAiAlertContent] = useState<{ title: string; description: React.ReactNode } | null>(null);
   const [isAiLoading, setIsAiLoading] = useState<string | null>(null);
@@ -48,6 +56,36 @@ export default function LeadsPage() {
   }, [firestore]);
 
   const { data: leads, isLoading } = useCollection<LeadWithId>(leadsCollection);
+  
+  const handleEditOpen = (lead: LeadWithId) => {
+    setLeadToEdit(lead);
+    setFormOpen(true);
+  };
+  
+  const handleDeleteOpen = (lead: LeadWithId) => {
+    setLeadToDelete(lead);
+    setDeleteAlertOpen(true);
+  };
+  
+  const confirmDelete = async () => {
+    if (!firestore || !leadToDelete) return;
+    try {
+        await deleteDoc(doc(firestore, 'leads', leadToDelete.id));
+        toast({
+            title: "Lead Deleted",
+            description: `The lead for ${leadToDelete.contactName} has been removed.`,
+        });
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: "Error",
+            description: "Failed to delete lead.",
+        });
+    } finally {
+        setDeleteAlertOpen(false);
+        setLeadToDelete(null);
+    }
+  };
 
   const handleStatusChange = async (leadId: string, newStatus: Lead['status']) => {
     if (!firestore) return;
@@ -125,7 +163,10 @@ export default function LeadsPage() {
             A real-time list of all potential customers and deals.
           </p>
         </div>
-        <Dialog open={isCreateLeadOpen} onOpenChange={setCreateLeadOpen}>
+        <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
+            setFormOpen(isOpen);
+            if (!isOpen) setLeadToEdit(null);
+        }}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -134,12 +175,18 @@ export default function LeadsPage() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Generate a New Lead</DialogTitle>
+              <DialogTitle>{leadToEdit ? 'Edit Lead' : 'Generate a New Lead'}</DialogTitle>
               <DialogDescription>
-                Enter the details below to create a new lead in the system.
+                {leadToEdit ? 'Update the details for this lead.' : 'Enter the details below to create a new lead.'}
               </DialogDescription>
             </DialogHeader>
-            <AddLeadForm onLeadCreated={() => setCreateLeadOpen(false)} />
+            <AddLeadForm 
+                lead={leadToEdit} 
+                onFinished={() => {
+                    setFormOpen(false);
+                    setLeadToEdit(null);
+                }} 
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -148,7 +195,7 @@ export default function LeadsPage() {
         <CardHeader>
           <CardTitle>Leads</CardTitle>
           <CardDescription>
-            Browse, search, and manage all available leads.
+            Browse, search, and manage all available leads. Right-click for options.
           </CardDescription>
            <div className="pt-4">
               <Input
@@ -179,40 +226,54 @@ export default function LeadsPage() {
                 <TableBody>
                   {filteredLeads && filteredLeads.length > 0 ? (
                     filteredLeads.map((lead) => (
-                      <TableRow key={lead.id}>
-                        <TableCell className="font-medium">{lead.contactName}</TableCell>
-                        <TableCell>{lead.companyName}</TableCell>
-                        <TableCell className="hidden lg:table-cell text-muted-foreground">
-                            {lead.potentialRevenue ? `$${lead.potentialRevenue.toLocaleString()}`: 'N/A'}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground">
-                            {lead.lastContacted ? format(lead.lastContacted.toDate(), 'PPP') : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          <Select value={lead.status} onValueChange={(newStatus: Lead['status']) => handleStatusChange(lead.id, newStatus)}>
-                            <SelectTrigger className="w-[120px] h-8 text-xs">
-                                <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {leadStatuses.map(status => (
-                                    <SelectItem key={status} value={status}>
-                                        {status}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {isAiLoading === lead.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin ml-auto" />
-                          ) : (
-                            <>
-                              <Button variant="ghost" size="icon" onClick={() => handleAiAction(lead, 'risk')} title="Assess Risk"><AlertTriangle className="h-4 w-4 text-destructive" /></Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleAiAction(lead, 'roi')} title="Estimate ROI"><TrendingUp className="h-4 w-4 text-green-500" /></Button>
-                            </>
-                          )}
-                        </TableCell>
-                      </TableRow>
+                      <ContextMenu key={lead.id}>
+                        <ContextMenuTrigger asChild>
+                           <TableRow>
+                            <TableCell className="font-medium">{lead.contactName}</TableCell>
+                            <TableCell>{lead.companyName}</TableCell>
+                            <TableCell className="hidden lg:table-cell text-muted-foreground">
+                                {lead.potentialRevenue ? `$${lead.potentialRevenue.toLocaleString()}`: 'N/A'}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell text-muted-foreground">
+                                {lead.lastContacted ? format(lead.lastContacted.toDate(), 'PPP') : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              <Select value={lead.status} onValueChange={(newStatus: Lead['status']) => handleStatusChange(lead.id, newStatus)}>
+                                <SelectTrigger className="w-[120px] h-8 text-xs">
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {leadStatuses.map(status => (
+                                        <SelectItem key={status} value={status}>
+                                            {status}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {isAiLoading === lead.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin ml-auto" />
+                              ) : (
+                                <>
+                                  <Button variant="ghost" size="icon" onClick={() => handleAiAction(lead, 'risk')} title="Assess Risk"><AlertTriangle className="h-4 w-4 text-destructive" /></Button>
+                                  <Button variant="ghost" size="icon" onClick={() => handleAiAction(lead, 'roi')} title="Estimate ROI"><TrendingUp className="h-4 w-4 text-green-500" /></Button>
+                                </>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                            <ContextMenuItem onSelect={() => handleEditOpen(lead)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Lead
+                            </ContextMenuItem>
+                            <ContextMenuItem onSelect={() => handleDeleteOpen(lead)} className="text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Lead
+                            </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     ))
                   ) : (
                     <TableRow>
@@ -228,6 +289,21 @@ export default function LeadsPage() {
         </CardContent>
       </Card>
     </div>
+    
+    <AlertDialog open={isDeleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+             <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive" />Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will permanently delete the lead for <span className="font-semibold text-foreground">"{leadToDelete?.contactName}"</span>. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
 
     <AlertDialog open={isAiAlertOpen} onOpenChange={setAiAlertOpen}>
         <AlertDialogContent>

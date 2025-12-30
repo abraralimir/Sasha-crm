@@ -2,12 +2,14 @@
 import type { Task, ProjectTask } from '@/lib/types';
 import { TaskCard } from './task-card';
 import { ScrollArea } from '../ui/scroll-area';
+import { useDrop } from 'react-dnd';
 
 interface TaskColumnProps {
   status: 'To Do' | 'In Progress' | 'Done';
   tasks: (Task | ProjectTask)[];
   onTaskDrop: (taskId: string, newStatus: 'To Do' | 'In Progress' | 'Done') => void;
   onTaskDelete: (taskId: string) => void;
+  onTaskEdit: (task: Task | ProjectTask) => void;
 }
 
 const statusConfig = {
@@ -25,11 +27,19 @@ const statusConfig = {
     }
 }
 
-export function TaskColumn({ status, tasks, onTaskDrop, onTaskDelete }: TaskColumnProps) {
+export function TaskColumn({ status, tasks, onTaskDrop, onTaskDelete, onTaskEdit }: TaskColumnProps) {
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'task',
+    drop: (item: { id: string }) => onTaskDrop(item.id, status),
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+  }));
 
   return (
     <div
-      className={`rounded-lg p-4 transition-colors flex flex-col bg-muted/50`}
+      ref={drop}
+      className={`rounded-lg p-4 transition-colors flex flex-col ${isOver ? 'bg-secondary' : 'bg-muted/50'}`}
     >
       <div className="flex items-center gap-2 mb-4">
         <div className={`h-2.5 w-2.5 rounded-full ${statusConfig[status].color}`}></div>
@@ -39,10 +49,10 @@ export function TaskColumn({ status, tasks, onTaskDrop, onTaskDelete }: TaskColu
       <ScrollArea className="h-[60vh] flex-1">
         <div className="pr-2 -mr-2">
             {tasks.length > 0 ? (
-            tasks.map((task) => <TaskCard key={task.id} task={task} onDelete={onTaskDelete} />)
+            tasks.map((task) => <TaskCard key={task.id} task={task} onDelete={onTaskDelete} onEdit={onTaskEdit} />)
             ) : (
-            <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg">
-                <p className="text-sm text-muted-foreground">No tasks here</p>
+            <div className="flex items-center justify-center h-48 border-2 border-dashed rounded-lg">
+                <p className="text-sm text-muted-foreground">Drop tasks here</p>
             </div>
             )}
         </div>

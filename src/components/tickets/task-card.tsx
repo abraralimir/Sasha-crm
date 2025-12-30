@@ -11,11 +11,13 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import type { Task, ProjectTask } from '@/lib/types';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
+import { useDrag } from 'react-dnd';
 
 interface TaskCardProps {
   task: Task | ProjectTask;
   onDelete: (taskId: string) => void;
+  onEdit: (task: Task | ProjectTask) => void;
 }
 
 const getInitials = (name?: string | null) => {
@@ -28,22 +30,27 @@ const getInitials = (name?: string | null) => {
       .toUpperCase();
 };
 
-export function TaskCard({ task, onDelete }: TaskCardProps) {
-  const handleSelect = () => {
-    onDelete(task.id);
-  };
-  
+export function TaskCard({ task, onDelete, onEdit }: TaskCardProps) {
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: 'task',
+    item: { id: task.id },
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging(),
+    }),
+  }));
+
   return (
     <ContextMenu>
       <ContextMenuTrigger>
         <Card
-          className="mb-4"
+          ref={drag}
+          className={`mb-4 cursor-grab ${isDragging ? 'opacity-50' : 'opacity-100'}`}
         >
           <CardHeader className="pb-2">
             <CardTitle className="text-base">{task.title}</CardTitle>
           </CardHeader>
           {task.description && (
-            <CardContent>
+            <CardContent className="py-2">
               <p className="text-sm text-muted-foreground">{task.description}</p>
             </CardContent>
           )}
@@ -72,7 +79,11 @@ export function TaskCard({ task, onDelete }: TaskCardProps) {
         </Card>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onSelect={handleSelect} className="text-destructive">
+        <ContextMenuItem onSelect={() => onEdit(task)}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Ticket
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => onDelete(task.id)} className="text-destructive">
             <Trash2 className="mr-2 h-4 w-4" />
             Delete Ticket
         </ContextMenuItem>

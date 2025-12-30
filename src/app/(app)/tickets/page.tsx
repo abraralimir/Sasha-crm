@@ -1,6 +1,7 @@
-
 'use client';
 import { useState } from 'react';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import { collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Loader2, Trash2, AlertTriangle, PlusCircle } from 'lucide-react';
@@ -31,9 +32,10 @@ import { useToast } from '@/hooks/use-toast';
 export default function TicketsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [isCreateTicketOpen, setCreateTicketOpen] = useState(false);
+  const [isFormOpen, setFormOpen] = useState(false);
   
   const tasksCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -49,6 +51,7 @@ export default function TicketsPage() {
       await updateDoc(taskRef, { status: newStatus });
     } catch (error) {
       console.error('Failed to update task status:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update task status.' });
     }
   };
 
@@ -58,6 +61,11 @@ export default function TicketsPage() {
       setTaskToDelete(task);
       setIsAlertOpen(true);
     }
+  };
+  
+  const openEditDialog = (task: Task) => {
+    setTaskToEdit(task);
+    setFormOpen(true);
   };
 
   const confirmDelete = async () => {
@@ -85,68 +93,80 @@ export default function TicketsPage() {
   const columns: ('To Do' | 'In Progress' | 'Done')[] = ['To Do', 'In Progress', 'Done'];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Team Tickets</h1>
-          <p className="text-muted-foreground">
-            A real-time Kanban board for internal team tasks.
-          </p>
-        </div>
-        <Dialog open={isCreateTicketOpen} onOpenChange={setCreateTicketOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Ticket
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create a New Ticket</DialogTitle>
-              <DialogDescription>Assign a new task to a team member.</DialogDescription>
-            </DialogHeader>
-            <AddTaskForm onTaskCreated={() => setCreateTicketOpen(false)} />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center items-center h-96">
-          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <div className="flex overflow-x-auto gap-6 pb-4">
-          {columns.map(status => (
-            <div key={status} className="min-w-[300px] flex-1">
-              <TaskColumn
-                status={status}
-                tasks={tasks?.filter(task => task.status === status) || []}
-                onTaskDrop={handleTaskDrop}
-                onTaskDelete={openDeleteDialog}
+    <DndProvider backend={HTML5Backend}>
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Team Tickets</h1>
+            <p className="text-muted-foreground">
+              A real-time Kanban board for internal team tasks.
+            </p>
+          </div>
+          <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
+              setFormOpen(isOpen);
+              if (!isOpen) setTaskToEdit(null);
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create Ticket
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{taskToEdit ? 'Edit Ticket' : 'Create a New Ticket'}</DialogTitle>
+                <DialogDescription>{taskToEdit ? 'Update the details for this task.' : 'Assign a new task to a team member.'}</DialogDescription>
+              </DialogHeader>
+              <AddTaskForm
+                task={taskToEdit}
+                onTaskCreated={() => {
+                  setFormOpen(false);
+                  setTaskToEdit(null);
+                }}
               />
-            </div>
-          ))}
+            </DialogContent>
+          </Dialog>
         </div>
-      )}
 
-      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="text-destructive" />
-              Are you sure you want to delete this ticket?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the ticket
-              titled: <span className="font-semibold text-foreground">"{taskToDelete?.title}"</span>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-96">
+            <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="flex overflow-x-auto gap-6 pb-4">
+            {columns.map(status => (
+              <div key={status} className="min-w-[300px] flex-1">
+                <TaskColumn
+                  status={status}
+                  tasks={tasks?.filter(task => task.status === status) || []}
+                  onTaskDrop={handleTaskDrop}
+                  onTaskDelete={openDeleteDialog}
+                  onTaskEdit={(task) => openEditDialog(task as Task)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="text-destructive" />
+                Are you sure you want to delete this ticket?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the ticket
+                titled: <span className="font-semibold text-foreground">"{taskToDelete?.title}"</span>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </DndProvider>
   );
 }

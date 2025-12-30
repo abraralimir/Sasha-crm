@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -38,6 +37,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+
 
 const statusStyles = {
   "Not Started": "bg-gray-500",
@@ -57,7 +59,8 @@ export default function ProjectDetailPage() {
   const { toast } = useToast();
   const { user: currentUser } = useUser();
 
-  const [isCreateTaskOpen, setCreateTaskOpen] = useState(false);
+  const [isTaskFormOpen, setTaskFormOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<ProjectTask | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<ProjectTask | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   
@@ -127,6 +130,11 @@ export default function ProjectDetailPage() {
       setIsAlertOpen(true);
     }
   };
+  
+  const openEditDialog = (task: ProjectTask) => {
+    setTaskToEdit(task);
+    setTaskFormOpen(true);
+  };
 
   const confirmDelete = async () => {
     if (!firestore || !project || !taskToDelete) return;
@@ -185,7 +193,7 @@ export default function ProjectDetailPage() {
   const progress = calculateProgress();
 
   return (
-    <>
+    <DndProvider backend={HTML5Backend}>
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
@@ -247,16 +255,26 @@ export default function ProjectDetailPage() {
                         <CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5 text-primary"/> Project Tasks</CardTitle>
                         <CardDescription>A Kanban board for tasks specific to this project.</CardDescription>
                     </div>
-                    <Dialog open={isCreateTaskOpen} onOpenChange={setCreateTaskOpen}>
+                     <Dialog open={isTaskFormOpen} onOpenChange={(isOpen) => {
+                        setTaskFormOpen(isOpen);
+                        if (!isOpen) setTaskToEdit(null);
+                    }}>
                         <DialogTrigger asChild>
                             <Button size="sm"><PlusCircle className='mr-2 h-4 w-4' />Create Task</Button>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
-                                <DialogTitle>Create Project Task</DialogTitle>
-                                <DialogDescription>Assign a new task for the "{project.projectName}" project.</DialogDescription>
+                                <DialogTitle>{taskToEdit ? 'Edit Task' : 'Create Project Task'}</DialogTitle>
+                                <DialogDescription>{taskToEdit ? 'Update task details.' : `Assign a new task for the "${project.projectName}" project.`}</DialogDescription>
                             </DialogHeader>
-                            <ProjectTaskForm projectId={project.id} onTaskCreated={() => setCreateTaskOpen(false)} />
+                            <ProjectTaskForm 
+                                projectId={project.id} 
+                                task={taskToEdit}
+                                onTaskCreated={() => {
+                                    setTaskFormOpen(false);
+                                    setTaskToEdit(null);
+                                }} 
+                            />
                         </DialogContent>
                     </Dialog>
                 </CardHeader>
@@ -272,6 +290,7 @@ export default function ProjectDetailPage() {
                                 tasks={projectTasks?.filter(task => task.status === status) || []}
                                 onTaskDrop={handleTaskDrop}
                                 onTaskDelete={openDeleteDialog}
+                                onTaskEdit={(task) => openEditDialog(task as ProjectTask)}
                             />
                             </div>
                         ))}
@@ -368,8 +387,6 @@ export default function ProjectDetailPage() {
         </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
-    </>
+    </DndProvider>
   );
 }
-
-    

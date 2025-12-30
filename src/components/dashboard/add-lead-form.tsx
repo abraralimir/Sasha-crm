@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as z from 'zod';
@@ -9,10 +8,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { useFirestore, addDocumentNonBlocking } from '@/firebase';
-import { collection, serverTimestamp } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, serverTimestamp, addDoc, doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import type { Lead } from '@/lib/types';
+import { Timestamp } from 'firebase/firestore';
+import { useEffect } from 'react';
+
+type LeadWithId = Lead & { id: string; lastContacted: Timestamp };
 
 const leadFormSchema = z.object({
   contactName: z.string().min(2, 'Contact name is required.'),
@@ -23,10 +27,11 @@ const leadFormSchema = z.object({
 });
 
 type AddLeadFormProps = {
-  onLeadCreated?: () => void;
+  lead?: LeadWithId | null;
+  onFinished?: () => void;
 };
 
-export function AddLeadForm({ onLeadCreated }: AddLeadFormProps) {
+export function AddLeadForm({ lead, onFinished }: AddLeadFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -40,30 +45,61 @@ export function AddLeadForm({ onLeadCreated }: AddLeadFormProps) {
     },
   });
 
+  useEffect(() => {
+    if (lead) {
+      form.reset({
+        contactName: lead.contactName,
+        companyName: lead.companyName,
+        email: lead.email,
+        status: lead.status,
+        potentialRevenue: lead.potentialRevenue,
+      });
+    } else {
+      form.reset({
+        contactName: '',
+        companyName: '',
+        email: '',
+        status: 'New',
+        potentialRevenue: undefined,
+      });
+    }
+  }, [lead, form]);
+
   const onSubmit = async (values: z.infer<typeof leadFormSchema>) => {
     if (!firestore) return;
 
-    const leadsCollection = collection(firestore, 'leads');
-    addDocumentNonBlocking(leadsCollection, {
-      ...values,
-      lastContacted: serverTimestamp(),
-    })
-      .then(() => {
+    try {
+      if (lead) {
+        const leadRef = doc(firestore, 'leads', lead.id);
+        await setDoc(leadRef, {
+            ...values,
+            lastContacted: serverTimestamp(),
+        }, { merge: true });
+        toast({
+          title: 'Lead Updated',
+          description: `Lead for ${values.contactName} has been updated.`,
+        });
+      } else {
+        const leadsCollection = collection(firestore, 'leads');
+        await addDoc(leadsCollection, {
+          ...values,
+          lastContacted: serverTimestamp(),
+        });
         toast({
           title: 'Lead Generated',
           description: `Lead for ${values.contactName} has been added.`,
         });
-        form.reset();
-        onLeadCreated?.();
-      })
-      .catch((error) => {
-        console.error('Error creating lead:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to generate lead.',
-        });
+      }
+      form.reset();
+      onFinished?.();
+    } catch (error) {
+      console.error('Error saving lead:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to save lead.',
       });
+    }
   };
 
   const formContent = (
@@ -115,7 +151,7 @@ export function AddLeadForm({ onLeadCreated }: AddLeadFormProps) {
             <FormItem>
               <FormLabel>Potential Revenue ($)</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="5000" {...field} />
+                <Input type="number" placeholder="5000" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -127,7 +163,7 @@ export function AddLeadForm({ onLeadCreated }: AddLeadFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
@@ -149,15 +185,15 @@ export function AddLeadForm({ onLeadCreated }: AddLeadFormProps) {
           {form.formState.isSubmitting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            'Generate Lead'
+            lead ? 'Save Changes' : 'Generate Lead'
           )}
         </Button>
       </form>
     </Form>
   );
 
-  // If onLeadCreated is provided, it's in a dialog, so don't render the Card
-  if (onLeadCreated) {
+  // If onFinished is provided, it's in a dialog, so don't render the Card
+  if (onFinished) {
     return formContent;
   }
 
