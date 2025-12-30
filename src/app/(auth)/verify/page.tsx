@@ -20,6 +20,7 @@ import { verifyFace } from '@/ai/flows/facial-verification';
 // --- Keeping only the primary user ---
 const allowedUsers: Record<string, { code: string; }> = {
   'alimirabrar@gmail.com': { code: '0012' },
+  'vuthpala.vedavyas1@gmail.com': { code: '0039' },
 };
 
 const MAX_ATTEMPTS = 5;
@@ -51,7 +52,7 @@ export default function VerifyPage() {
   const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
   const { data: allUsers } = useCollection<UserProfile>(usersCollection);
 
- const stopCamera = useCallback(() => {
+  const stopCamera = useCallback(() => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => track.stop());
@@ -199,6 +200,7 @@ export default function VerifyPage() {
               sessionStorage.setItem('isVerified', 'true');
               sessionStorage.setItem('verifiedEmail', referenceUser.email!);
               toast({ title: 'Facial Verification Successful!', description: `Welcome, ${referenceUser.name}. Redirecting...` });
+              stopCamera();
               setTimeout(() => router.push('/login'), 1500);
           } else {
               setErrorMessage("Face not recognized. Please try again.");
