@@ -1,3 +1,4 @@
+
 'use client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
@@ -14,22 +15,40 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [isSecurityLockActive, setSecurityLockActive] = useState(false);
+  const [isAdminOverride, setIsAdminOverride] = useState(false);
 
   // Initialize presence tracking for the logged-in user
   usePresence();
+  
+  useEffect(() => {
+    // Check for admin override at the beginning of the session
+    const override = sessionStorage.getItem('sasha-security-override') === 'true';
+    setIsAdminOverride(override);
+  }, []);
 
   // Log the security message to the console on initial load
   useEffect(() => {
     console.log('%c👁️ Sasha Security is active.', 'color: hsl(var(--primary)); font-size: 14px; font-weight: bold;');
+    // The following line is commented out to prevent aggressive console clearing which can hinder debugging.
+    // setTimeout(() => console.clear(), 500);
   }, []);
 
   const handleDevToolsOpen = useCallback(() => {
-    setSecurityLockActive(true);
+    // Only activate security lock if admin override is not enabled
+    if (sessionStorage.getItem('sasha-security-override') !== 'true') {
+        setSecurityLockActive(true);
+    }
   }, []);
 
   const handleTimerEnd = useCallback(() => {
     setSecurityLockActive(false);
   }, []);
+
+  const handleAdminOverride = () => {
+    sessionStorage.setItem('sasha-security-override', 'true');
+    setIsAdminOverride(true);
+    setSecurityLockActive(false); // Immediately dismiss the overlay
+  };
 
   useDevToolsWatcher(handleDevToolsOpen);
 
@@ -49,7 +68,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   return (
       <SidebarProvider>
-        <SecurityOverlay isActive={isSecurityLockActive} onTimerEnd={handleTimerEnd} />
+        <SecurityOverlay 
+          isActive={isSecurityLockActive} 
+          onTimerEnd={handleTimerEnd} 
+          onAdminOverride={handleAdminOverride}
+        />
         <SidebarNav />
         <SidebarInset>
           <Header />

@@ -25,25 +25,16 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, UserPlus, Camera, RefreshCcw, UserCheck } from 'lucide-react';
+import { Loader2, Upload, UserPlus, Camera, RefreshCcw, UserCheck, KeyRound, ShieldCheck, ArrowRight } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 
 
-const formSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email.' }),
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  imageFile: z.instanceof(File).optional(),
-});
+const ADMIN_PIN = '0012';
 
-const getInitials = (name?: string | null) => {
-  if (!name) return 'U';
-  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-};
-
-export default function AdminPage() {
+function AdminContent() {
   const { toast } = useToast();
   const firestore = useFirestore();
 
@@ -54,6 +45,12 @@ export default function AdminPage() {
 
   const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
   const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersCollection);
+  
+  const formSchema = z.object({
+    email: z.string().email({ message: 'Please enter a valid email.' }),
+    name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+    imageFile: z.instanceof(File).optional(),
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -185,6 +182,11 @@ export default function AdminPage() {
         description: 'Failed to update user profile for facial recognition.',
       });
     }
+  };
+
+  const getInitials = (name?: string | null) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
 
   return (
@@ -321,4 +323,74 @@ export default function AdminPage() {
       </div>
     </div>
   );
+}
+
+
+export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const sessionAuth = sessionStorage.getItem('admin-authenticated') === 'true';
+    if (sessionAuth) {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handlePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    setTimeout(() => {
+        if (pin === ADMIN_PIN) {
+            sessionStorage.setItem('admin-authenticated', 'true');
+            setIsAuthenticated(true);
+        } else {
+            setError('Invalid PIN. Access denied.');
+            setPin('');
+        }
+        setIsLoading(false);
+    }, 500);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-10rem)]">
+        <Card className="w-full max-w-sm text-center">
+            <CardHeader>
+                <CardTitle className="flex items-center justify-center gap-2">
+                    <ShieldCheck className="h-6 w-6 text-destructive" />
+                    Admin Access Required
+                </CardTitle>
+                <CardDescription>
+                    Please enter the admin PIN to continue.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={handlePinSubmit} className="space-y-4">
+                    <div className="relative">
+                        <KeyRound className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            type="password"
+                            placeholder="Enter Admin PIN"
+                            className="pl-8 pr-10 text-center"
+                            value={pin}
+                            onChange={(e) => setPin(e.target.value)}
+                            disabled={isLoading}
+                        />
+                    </div>
+                    {error && <p className="text-sm text-destructive">{error}</p>}
+                    <Button type="submit" className="w-full" disabled={isLoading || !pin}>
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Unlock'}
+                    </Button>
+                </form>
+            </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return <AdminContent />;
 }
