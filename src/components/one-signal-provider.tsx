@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -10,6 +11,9 @@ export function OneSignalProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function initializeOneSignal() {
+      // Only initialize OneSignal in production to avoid domain errors
+      if (process.env.NODE_ENV !== 'production') return;
+
       if (typeof window !== 'undefined' && !isInitialized) {
         try {
           await OneSignal.init({
