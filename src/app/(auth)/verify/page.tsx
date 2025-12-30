@@ -17,13 +17,9 @@ import { collection } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { verifyFace } from '@/ai/flows/facial-verification';
 
-// --- Existing User Data (with new facialVerificationImageUrl) ---
+// --- Keeping only the primary user ---
 const allowedUsers: Record<string, { code: string; }> = {
   'alimirabrar@gmail.com': { code: '0012' },
-  'saleem@bitstek.io': { code: '0776' },
-  'adil@bitstek.io': { code: '0779' },
-  'ismail@sbm.com': { code: '0071' },
-  'hussainhamdan@sbm.com': { code: '0072' },
 };
 
 const MAX_ATTEMPTS = 5;
@@ -55,7 +51,7 @@ export default function VerifyPage() {
   const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
   const { data: allUsers } = useCollection<UserProfile>(usersCollection);
 
-  const stopCamera = useCallback(() => {
+ const stopCamera = useCallback(() => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => track.stop());
