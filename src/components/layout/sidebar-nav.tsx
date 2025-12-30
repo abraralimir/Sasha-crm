@@ -33,7 +33,7 @@ const mainMenuItems = [
   { href: '/hr', label: 'HR', icon: Briefcase },
   { href: '/chat', label: 'Collaboration', icon: MessageSquare },
   { href: '/conference', label: 'Conference', icon: Video },
-  { href: '/admin0012', label: 'Admin', icon: Shield, admin: true },
+  { href: '/admin', label: 'Admin', icon: Shield, admin: true },
 ];
 
 export function SidebarNav() {
