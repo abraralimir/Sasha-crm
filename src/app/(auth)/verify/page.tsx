@@ -18,11 +18,12 @@ import { collection } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { verifyFace } from '@/ai/flows/facial-verification';
 
-// --- Keeping only the primary user ---
+// --- User Access Control List ---
 const allowedUsers: Record<string, { code: string; }> = {
   'alimirabrar@gmail.com': { code: '0012' },
   'vuthpala.vedavyas1@gmail.com': { code: '0039' },
 };
+
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 30000;
@@ -186,9 +187,13 @@ export default function VerifyPage() {
       setErrorMessage('');
 
       try {
-          const referenceUser = allUsers?.find(u => u.facialVerificationImageUrl);
+          // Find the user whose email is in our allowed list and has an image
+          const referenceUser = allUsers?.find(u => 
+              u.email && allowedUsers[u.email.toLowerCase()] && u.facialVerificationImageUrl
+          );
+
           if (!referenceUser || !referenceUser.facialVerificationImageUrl) {
-              throw new Error("No users are enrolled for facial verification.");
+              throw new Error("No users are enrolled for facial verification or the enrolled user's email is not in the allow list.");
           }
           
           const result = await verifyFace({
@@ -214,7 +219,7 @@ export default function VerifyPage() {
           handleFailedAttempt();
       } finally {
           setIsFaceLoading(false);
-          stopCamera();
+          // Don't stop camera on fail, so user can retry
       }
   };
 
